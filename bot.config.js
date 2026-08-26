@@ -13,7 +13,7 @@ export default {
   staff: [
     { number: '62895405449333', role: 'owner', label: 'JamvanHax0r • Developer' },
     { number: '13126001646', role: 'owner', label: 'JHPremix • Developer' },
-    // { number: '6289698133663', role: 'admin', label: 'XN • Admin' },
+    { number: '6289698133663', role: 'admin', label: 'XN • Admin' },
   ],
 
   logLevel: 'info',

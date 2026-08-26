@@ -14,11 +14,6 @@ function extractText(message) {
 
 const digits = (jid) => (jid ?? '').split('@')[0].split(':')[0]
 
-/**
- * Bangun `ctx` per pesan masuk.
- * Menangani PN ↔ LID sesuai docs resmi zapo: kalau pengirim datang sebagai
- * @lid, pakai field alt (participantAlt/remoteJidAlt) sebagai nomor HP.
- */
 export function buildContext(client, event) {
   const primary = event.key.participant ?? event.key.remoteJid
   const alt = event.key.participantAlt ?? event.key.remoteJidAlt
@@ -39,11 +34,10 @@ export function buildContext(client, event) {
     senderNumber,
     pushName: event.pushName,
     isGroup: Boolean(event.key.isGroup),
+    receivedAt: Date.now(), // 👈 buat latensi asli di .ping
 
-    // JID yang di-tag/mention di pesan (kalau ada)
     mentioned: event.message?.extendedTextMessage?.contextInfo?.mentionedJid ?? [],
 
-    // Role staff
     role,
     staffLabel: staff?.label ?? null,
     isOwner: role === 'owner',
