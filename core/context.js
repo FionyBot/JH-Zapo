@@ -12,22 +12,44 @@ function extractText(message) {
   )
 }
 
+const digits = (jid) => (jid ?? '').split('@')[0].split(':')[0]
+
 /**
- * Bangun `ctx` — objek ringkas yang dikasih ke tiap feature saat dijalankan.
- * Menyimpan info penting dari event + beberapa helper balasan siap pakai.
+ * Bangun `ctx` per pesan masuk.
+ * Menangani PN ↔ LID sesuai docs resmi zapo: kalau pengirim datang sebagai
+ * @lid, pakai field alt (participantAlt/remoteJidAlt) sebagai nomor HP.
  */
 export function buildContext(client, event) {
-  const senderJid = event.key.participant ?? event.key.remoteJid
-  const senderNumber = senderJid?.split('@')[0]?.split(':')[0] ?? ''
+  const primary = event.key.participant ?? event.key.remoteJid
+  const alt = event.key.participantAlt ?? event.key.remoteJidAlt
+
+  const pnJid = primary?.endsWith('@lid') ? (alt ?? primary) : primary
+  const lidJid = primary?.endsWith('@lid') ? primary : alt?.endsWith('@lid') ? alt : undefined
+
+  const senderNumber = digits(pnJid)
+  const staff = config.staff.find((s) => s.number === senderNumber)
+  const role = staff?.role ?? null
 
   const ctx = {
     client,
     event,
     chat: event.key.remoteJid,
-    sender: senderJid,
-    isGroup: Boolean(event.key.isGroup),
-    isOwner: config.owners.includes(senderNumber),
+    sender: pnJid,
+    senderLid: lidJid,
+    senderNumber,
     pushName: event.pushName,
+    isGroup: Boolean(event.key.isGroup),
+
+    // JID yang di-tag/mention di pesan (kalau ada)
+    mentioned: event.message?.extendedTextMessage?.contextInfo?.mentionedJid ?? [],
+
+    // Role staff
+    role,
+    staffLabel: staff?.label ?? null,
+    isOwner: role === 'owner',
+    isAdmin: role === 'owner' || role === 'admin',
+    isStaff: role !== null,
+
     body: extractText(event.message) ?? '',
     command: '',
     args: [],
@@ -41,12 +63,10 @@ export function buildContext(client, event) {
       return client.message.send(ctx.chat, { type: 'reaction', emoji, target: event })
     },
 
-    /** Kirim richMessage berisi tombol quick-reply. */
     async replyButtons({ text, footer, buttons }) {
       return client.message.send(ctx.chat, richButtons({ text, footer, buttons }))
     },
 
-    /** Kirim richMessage berisi list/menu single-select. */
     async replyList({ text, footer, title, buttonText, sections }) {
       return client.message.send(ctx.chat, richList({ text, footer, title, buttonText, sections }))
     }

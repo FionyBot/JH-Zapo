@@ -9,11 +9,16 @@ onRichReply('rich:hai', async (ctx) => {
 })
 
 onRichReply('rich:info', async (ctx) => {
+  const ownerList = config.staff
+    .filter((s) => s.role === 'owner')
+    .map((s) => `  • +${s.number} — ${s.label}`)
+    .join('\n')
+
   await ctx.reply(
     `ℹ️ *INFO ${config.botName.toUpperCase()}*\n\n` +
       `• Base: Zapo-JS (richMessage nativeFlow)\n` +
       `• Prefix: ${config.prefix.join(' ')}\n` +
-      `• Owner: ${config.owners.map((n) => `+${n}`).join(', ')}\n\n` +
+      `• Owner:\n${ownerList}\n\n` +
       `Masih dalam pengembangan 🚧`
   )
 })

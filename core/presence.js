@@ -1,63 +1,39 @@
 /**
- * presence.js — adapter typing indicator & read receipt.
+ * presence.js — typing indicator & read receipt.
+ * Keduanya pakai method resmi dari referensi zapo:
+ *  - client.message.sendReceipt(event, { type: 'read' })
+ *  - client.presence.sendChatstate(jid, { type: 'composing' })
  */
 import { logger } from './logger.js'
 
-let presenceWarned = false
 let readWarned = false
+let typingWarned = false
 
-/** Nampilin indikator "sedang mengetik..." di chat. */
-export async function sendTyping(client, chat) {
-  const attempts = []
-  const p = client.presence
-
-  if (typeof p?.send === 'function') {
-    attempts.push(() => p.send({ chat, type: 'composing' }))
-    attempts.push(() => p.send(chat, 'composing'))
-  }
-  if (typeof p?.setTyping === 'function') attempts.push(() => p.setTyping(chat, true))
-  if (typeof p?.broadcast === 'function') attempts.push(() => p.broadcast({ chat, type: 'composing' }))
-  if (typeof client.sendPresenceUpdate === 'function') {
-    attempts.push(() => client.sendPresenceUpdate('composing', chat))
-  }
-
-  for (const attempt of attempts) {
-    try {
-      await attempt()
-      return
-    } catch {
-      // bentuk salah, coba berikutnya
+/** Tandai pesan masuk sebagai dibaca (centang biru). */
+export async function markRead(client, event) {
+  try {
+    await client.message.sendReceipt(event, { type: 'read' })
+  } catch (err) {
+    if (!readWarned) {
+      readWarned = true
+      logger.warn({ err }, 'Auto-read gagal')
     }
-  }
-
-  if (!presenceWarned) {
-    presenceWarned = true
-    logger.warn('API presence zapo tidak dikenali — indikator typing dinonaktifkan. Cek docs zapo halaman "Presence & status".')
   }
 }
 
-/** Tandai pesan masuk sebagai dibaca (read receipt). */
-export async function markRead(client, event) {
-  const key = event.key
-  const candidates = [
-    [client.message, client.message?.read],
-    [client.message, client.message?.markRead],
-    [client, client.readMessages],
-    [client.receipt, client.receipt?.read]
-  ]
-
-  for (const [thisArg, fn] of candidates) {
-    if (typeof fn !== 'function') continue
+/** Nampilin indikator "sedang mengetik..." di chat. */
+export async function sendTyping(client, chat) {
+  try {
+    await client.presence.sendChatstate(chat, { type: 'composing' })
+  } catch {
     try {
-      await fn.call(thisArg, [key])
-      return
-    } catch {
-      // coba kandidat berikutnya
+      // fallback bentuk options alternatif kalau yang pertama ditolak
+      await client.presence.sendChatstate(chat, { state: 'composing' })
+    } catch (err) {
+      if (!typingWarned) {
+        typingWarned = true
+        logger.warn({ err }, 'Typing indicator gagal')
+      }
     }
-  }
-
-  if (!readWarned) {
-    readWarned = true
-    logger.warn('API read-receipt zapo tidak dikenali — auto-read dinonaktifkan. Cek docs zapo halaman "Receiving messages".')
   }
 }

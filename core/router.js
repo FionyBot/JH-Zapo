@@ -4,7 +4,7 @@ import { buildContext } from './context.js'
 import { readRichReply } from './richMessage.js'
 import { getFeature } from './features.js'
 import { checkCooldown, checkFlood } from './cooldown.js'
-import { touchUser, incrementCommand } from './db.js'
+import { touchUser, incrementCommand, getUser } from './db.js'
 import { sendTyping, markRead } from './presence.js'
 
 const richHandlers = new Map()
@@ -12,8 +12,6 @@ const richHandlers = new Map()
 export function onRichReply(id, handler) {
   richHandlers.set(id, handler)
 }
-
-const num = (jid) => (jid || '').split('@')[0].split(':')[0]
 
 function describeMessage(message) {
   if (!message) return '(pesan kosong)'
@@ -34,10 +32,10 @@ export async function route(client, event) {
   if (event.key.fromMe) return
 
   const ctx = buildContext(client, event)
-  const who = `${ctx.pushName || 'Anonim'} +${num(ctx.sender)}`
+  const who = `${ctx.pushName || 'Anonim'} +${ctx.senderNumber}`
   const where = ctx.isGroup ? 'GRUP' : 'PRIV'
 
-  // Auto-read pesan masuk
+  // Auto-read (centang biru)
   if (config.autoRead) {
     void markRead(client, event)
   }
@@ -93,23 +91,33 @@ export async function route(client, event) {
   if (!feature) return
 
   // Catat user ke database
-  const user = touchUser(ctx.sender, ctx.pushName)
+  touchUser(ctx.sender, ctx.pushName)
 
-  // User di-ban? (owner kebal)
-  if (user?.banned && !ctx.isOwner) {
-    logger.info(`🚫 ${who} [${where}] di-ban — command ${commandName} ditolak`)
-    await ctx.reply('🚫 Kamu telah di-ban oleh owner bot.')
-    return
+  // User di-ban? (staff kebal) — cek dua arah: JID nomor maupun LID
+  if (!ctx.isStaff) {
+    const rowPn = getUser(ctx.sender)
+    const rowLid = ctx.senderLid ? getUser(ctx.senderLid) : undefined
+    if (rowPn?.banned || rowLid?.banned) {
+      logger.info(`🚫 ${who} [${where}] di-ban — command ${commandName} ditolak`)
+      await ctx.reply('🚫 Kamu telah di-ban oleh owner bot.')
+      return
+    }
   }
 
-  // Fitur khusus owner
+  // Akses owner-only
   if (feature.owner && !ctx.isOwner) {
     await ctx.reply('🚫 Fitur ini khusus owner bot.')
     return
   }
 
-  // Anti-spam (flood protection)
-  if (!ctx.isOwner && config.antiSpam?.enabled) {
+  // Akses admin (owner juga boleh)
+  if (feature.admin && !ctx.isAdmin) {
+    await ctx.reply('🚫 Fitur ini khusus owner/admin bot.')
+    return
+  }
+
+  // Anti-spam (staff kebal)
+  if (!ctx.isStaff && config.antiSpam?.enabled) {
     const flood = checkFlood(ctx.sender, config.antiSpam)
     if (flood.flooded) {
       await ctx.reply(`🐢 Pelan-pelan! Tunggu ${(flood.remainingMs / 1000).toFixed(0)} detik sebelum kirim command lagi.`)
@@ -117,8 +125,8 @@ export async function route(client, event) {
     }
   }
 
-  // Cooldown per-command
-  if (!ctx.isOwner) {
+  // Cooldown per-command (staff kebal)
+  if (!ctx.isStaff) {
     const cd = checkCooldown(ctx.sender, commandName, feature.cooldown ?? config.cooldown ?? 0)
     if (cd.onCooldown) {
       await ctx.reply(`⏳ Tunggu ${(cd.remainingMs / 1000).toFixed(1)} detik lagi buat pakai ${matchedPrefix}${commandName}.`)
@@ -126,7 +134,7 @@ export async function route(client, event) {
     }
   }
 
-  // Indikator "sedang mengetik..."
+  // Indikator mengetik
   if (config.typingPresence) {
     void sendTyping(client, ctx.chat)
   }
@@ -137,7 +145,7 @@ export async function route(client, event) {
   ctx.text = args.join(' ')
 
   incrementCommand(ctx.sender)
-  logger.info(`⚙️  [CMD] ${matchedPrefix}${commandName} dijalankan oleh +${num(ctx.sender)}`)
+  logger.info(`⚙️  [CMD] ${matchedPrefix}${commandName} dijalankan oleh +${ctx.senderNumber}${ctx.role ? ` (${ctx.role})` : ''}`)
   try {
     await feature.run(ctx)
   } catch (err) {

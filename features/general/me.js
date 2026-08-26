@@ -17,7 +17,8 @@ export default {
     await ctx.reply(
       `👤 *PROFIL KAMU*\n\n` +
         `• Nama: ${user.name ?? ctx.pushName ?? '-'}\n` +
-        `• Nomor: +${ctx.sender.split('@')[0].split(':')[0]}\n` +
+        `• Nomor: +${ctx.senderNumber}\n` +
+        `• Role: ${ctx.isStaff ? `${ctx.role.toUpperCase()}${ctx.staffLabel ? ` (${ctx.staffLabel})` : ''}` : 'User biasa'}\n` +
         `• Total command: ${user.command_count}\n` +
         `• Pertama aktif: ${fmt(user.first_seen)}\n` +
         `• Terakhir aktif: ${fmt(user.last_seen)}\n` +
