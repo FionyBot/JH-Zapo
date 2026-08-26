@@ -86,15 +86,28 @@ export function richList({ text, footer, title, buttonText, sections }) {
  * @returns {{ name: string, id: string, raw: Record<string, unknown> } | undefined}
  */
 export function readRichReply(message) {
-  const flow = message?.interactiveResponseMessage?.nativeFlowResponseMessage
-  if (!flow) return undefined
+  if (!message) return undefined
 
-  let params = {}
-  try {
-    params = flow.paramsJson ? JSON.parse(flow.paramsJson) : {}
-  } catch {
-    // paramsJson tidak valid JSON, biarkan kosong
+  // 1) nativeFlow modern (quick_reply & single_select)
+  const flow = message.interactiveResponseMessage?.nativeFlowResponseMessage
+  if (flow) {
+    let params = {}
+    try {
+      params = flow.paramsJson ? JSON.parse(flow.paramsJson) : {}
+    } catch { /* JSON invalid, biarkan kosong */ }
+    const id = params.id ?? params.selected_row_id ?? params.row_id ?? ''
+    if (id) return { name: flow.name ?? 'native_flow', id, raw: params }
   }
 
-  return { name: flow.name ?? '', id: params.id ?? '', raw: params }
+  // 2) quick_reply di beberapa klien (Android) datang sebagai bentuk legacy ini
+  const btn = message.buttonsResponseMessage
+  if (btn?.selectedButtonId) {
+    return { name: 'buttons_response', id: btn.selectedButtonId, raw: btn }
+  }
+
+  // 3) list legacy
+  const rowId = message.listResponseMessage?.singleSelectReply?.selectedRowId
+  if (rowId) return { name: 'list_response', id: rowId, raw: message.listResponseMessage }
+
+  return undefined
 }

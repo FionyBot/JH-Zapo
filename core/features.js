@@ -7,6 +7,7 @@ const FEATURES_DIR = fileURLToPath(new URL('../features/', import.meta.url))
 
 const byCommand = new Map()
 let loadedCount = 0
+const cooldowns = new Map() // Track cooldown per user per command
 
 async function walk(dirPath) {
   const entries = await readdir(dirPath, { withFileTypes: true })
@@ -22,10 +23,6 @@ async function walk(dirPath) {
   return files
 }
 
-/**
- * Scan seluruh `features/**\/*.js`, import tiap file, dan daftarkan ke registry.
- * Tiap file wajib `export default { name, run(ctx) {...} }`.
- */
 export async function loadFeatures() {
   byCommand.clear()
   const files = await walk(FEATURES_DIR)
@@ -33,7 +30,6 @@ export async function loadFeatures() {
 
   for (const filePath of files) {
     try {
-      // ?t=timestamp buat cache-busting saat reload manual (lihat features/owner/reload.js)
       const moduleUrl = `${pathToFileURL(filePath).href}?t=${Date.now()}`
       const mod = await import(moduleUrl)
       const feature = mod.default
@@ -66,4 +62,24 @@ export function listFeatures() {
 
 export function featureCount() {
   return loadedCount
+}
+
+/**
+ * Cek apakah user masih dalam cooldown untuk command tertentu
+ * Return: { onCooldown: boolean, remainingMs: number }
+ */
+export function checkCooldown(userId, commandName, cooldownMs = 3000) {
+  const key = `${userId}:${commandName}`
+  const now = Date.now()
+  const lastUsed = cooldowns.get(key) || 0
+  
+  if (now - lastUsed < cooldownMs) {
+    return {
+      onCooldown: true,
+      remainingMs: cooldownMs - (now - lastUsed)
+    }
+  }
+  
+  cooldowns.set(key, now)
+  return { onCooldown: false, remainingMs: 0 }
 }

@@ -2,19 +2,15 @@ import config from '../bot.config.js'
 import { logger } from './logger.js'
 import { buildContext } from './context.js'
 import { readRichReply } from './richMessage.js'
-import { getFeature } from './features.js'
+import { getFeature, checkCooldown } from './features.js'
 
-// name-space untuk id richMessage supaya gak nabrak sama id command lain,
-// mis. tombol dengan id "rich:greet" ditangani terpisah dari command teks "greet".
 const richHandlers = new Map()
 
-/** Daftarkan handler untuk id tombol/list tertentu (dipakai dari feature). */
 export function onRichReply(id, handler) {
   richHandlers.set(id, handler)
 }
 
 export async function route(client, event) {
-  // Sinkronisasi multi-device — abaikan pesan yang bot kirim sendiri
   if (event.key.fromMe) return
 
   const ctx = buildContext(client, event)
@@ -26,26 +22,63 @@ export async function route(client, event) {
     if (handler) {
       await handler(ctx, richReply)
     } else {
-      logger.debug({ id: richReply.id }, 'Tidak ada handler untuk richMessage id ini')
+      logger.warn({ id: richReply.id, name: richReply.name }, 'Tidak ada handler untuk richMessage id ini')
     }
     return
   }
 
-  // 2) Bukan richMessage → treat sebagai command teks biasa
-  if (!ctx.body || !ctx.body.startsWith(config.prefix)) return
+  // Diagnostik: ada pesan respons richMessage tapi id gak kebaca
+  if (
+    event.message?.interactiveResponseMessage ||
+    event.message?.buttonsResponseMessage ||
+    event.message?.listResponseMessage
+  ) {
+    logger.warn({ message: event.message }, 'Respons richMessage gak dikenal, cek bentuk raw-nya')
+    return
+  }
 
-  const withoutPrefix = ctx.body.slice(config.prefix.length).trim()
+  // 2) Cek multi-prefix
+  if (!ctx.body) return
+  
+  let matchedPrefix = ''
+  for (const prefix of config.prefix) {
+    if (ctx.body.startsWith(prefix)) {
+      matchedPrefix = prefix
+      break
+    }
+  }
+  
+  if (!matchedPrefix) return
+
+  const withoutPrefix = ctx.body.slice(matchedPrefix.length).trim()
   const [commandName, ...args] = withoutPrefix.split(/\s+/)
   if (!commandName) return
 
   const feature = getFeature(commandName)
   if (!feature) return
 
+  // 3) Cek owner
   if (feature.owner && !ctx.isOwner) {
     await ctx.reply('🚫 Fitur ini khusus owner bot.')
     return
   }
 
+  // 4) Cek cooldown (skip untuk owner)
+  if (!ctx.isOwner && config.cooldown > 0) {
+    const { onCooldown, remainingMs } = checkCooldown(
+      ctx.sender,
+      commandName,
+      feature.cooldown || config.cooldown
+    )
+    
+    if (onCooldown) {
+      const remainingSec = (remainingMs / 1000).toFixed(1)
+      await ctx.reply(`⏳ Tunggu ${remainingSec} detik sebelum menggunakan command ini lagi.`)
+      return
+    }
+  }
+
+  ctx.prefix = matchedPrefix
   ctx.command = commandName.toLowerCase()
   ctx.args = args
   ctx.text = args.join(' ')
@@ -54,6 +87,6 @@ export async function route(client, event) {
     await feature.run(ctx)
   } catch (err) {
     logger.error({ err, feature: feature.name }, 'Feature gagal dijalankan')
-    await ctx.reply(`⚠️ Terjadi error saat menjalankan ${config.prefix}${feature.name}.`)
+    await ctx.reply(`⚠️ Terjadi error saat menjalankan ${matchedPrefix}${feature.name}.`)
   }
 }

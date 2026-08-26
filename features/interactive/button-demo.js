@@ -1,26 +1,34 @@
+import config from '../../bot.config.js'
 import { onRichReply } from '../../core/router.js'
 
-// Handler dijalankan saat user tap salah satu tombol di bawah.
-// Key-nya (mis. "rich:hai") adalah id yang kita set sendiri di `buttons` — bebas
-// dinamai apa aja, asal unik antar feature.
 onRichReply('rich:hai', async (ctx) => {
-  await ctx.reply(`Haii ${ctx.pushName || ''}! 👋 Ada yang bisa dibantu?`)
+  const name = ctx.pushName || 'kawan'
+  await ctx.reply(
+    `Halo ${name}! 👋\nAda yang bisa ${config.botName} bantu?\nKetik ${config.mainPrefix}menu buat lihat semua command.`
+  )
 })
 
 onRichReply('rich:info', async (ctx) => {
-  await ctx.reply('Bot ini jalan di atas Zapo-JS, pakai richMessage (interactiveMessage + nativeFlow) 🧩')
+  await ctx.reply(
+    `ℹ️ *INFO ${config.botName.toUpperCase()}*\n\n` +
+      `• Base: Zapo-JS (richMessage nativeFlow)\n` +
+      `• Prefix: ${config.prefix.join(' ')}\n` +
+      `• Owner: ${config.owners.map((n) => `+${n}`).join(', ')}\n\n` +
+      `Masih dalam pengembangan 🚧`
+  )
 })
 
 export default {
   name: 'button',
+  aliases: ['btn', 'tombol'],
   tags: 'interactive',
   description: 'Contoh richMessage: tombol quick-reply',
   async run(ctx) {
     await ctx.replyButtons({
-      text: 'Pilih salah satu opsi di bawah ini:',
-      footer: 'wabot-core • richMessage demo',
+      text: `Hai ${ctx.pushName || ''}! Mau ngapain nih?`,
+      footer: `${config.botName} • interactive`,
       buttons: [
-        { id: 'rich:hai', text: '👋 Sapa aku' },
+        { id: 'rich:hai', text: '👋 Sapa bot' },
         { id: 'rich:info', text: 'ℹ️ Info bot' }
       ]
     })

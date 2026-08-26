@@ -7,9 +7,12 @@
  * Credential WhatsApp yang sebenarnya (session) disimpan terpisah di folder
  * `.session/` (lihat core/session.js) — folder itu yang WAJIB masuk .gitignore.
  */
+const prefix = ['.', '!', '/', '#']
+
 export default {
   // Prefix command, contoh: "!ping", ".ping", "#ping"
-  prefix: '!',
+  prefix,
+  mainPrefix: prefix[0],
 
   // ID sesi WhatsApp (biarin "default" kalau cuma 1 akun)
   sessionId: 'default',
@@ -22,6 +25,8 @@ export default {
 
   // Nama bot, dipakai di banner QR & pesan menu
   botName: 'Fiony Bot',
+
+  cooldown: 3000,
 
   qr: {
     // Tampilkan QR versi kecil (unicode half-block) di terminal
