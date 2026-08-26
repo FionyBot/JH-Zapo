@@ -2,7 +2,7 @@ import config from '../bot.config.js'
 import { logger } from './logger.js'
 import { buildContext } from './context.js'
 import { readRichReply } from './richMessage.js'
-import { getFeature, checkCooldown } from './features.js'
+import { getFeature } from './features.js'
 
 const richHandlers = new Map()
 
@@ -10,36 +10,63 @@ export function onRichReply(id, handler) {
   richHandlers.set(id, handler)
 }
 
+const num = (jid) => (jid || '').split('@')[0].split(':')[0]
+
+function describeMessage(message) {
+  if (!message) return '(pesan kosong)'
+  if (message.conversation) return `teks: "${message.conversation}"`
+  if (message.extendedTextMessage?.text) return `teks: "${message.extendedTextMessage.text}"`
+  if (message.imageMessage) return `gambar 📷${message.imageMessage.caption ? ` • "${message.imageMessage.caption}"` : ''}`
+  if (message.videoMessage) return `video 🎥${message.videoMessage.caption ? ` • "${message.videoMessage.caption}"` : ''}`
+  if (message.stickerMessage) return 'stiker 🟡'
+  if (message.audioMessage) return 'audio 🎵'
+  if (message.documentMessage) return `dokumen 📄 ${message.documentMessage.fileName ?? ''}`
+  if (message.contactMessage) return 'kontak 👤'
+  if (message.locationMessage) return 'lokasi 📍'
+  const keys = Object.keys(message)
+  return keys.length ? `(bentuk belum dikenal: ${keys.join(', ')})` : '(pesan kosong)'
+}
+
 export async function route(client, event) {
   if (event.key.fromMe) return
 
   const ctx = buildContext(client, event)
+  const who = `${ctx.pushName || 'Anonim'} +${num(ctx.sender)}`
+  const where = ctx.isGroup ? 'GRUP' : 'PRIV'
 
-  // 1) Cek dulu apakah ini balesan richMessage (klik tombol / pilih list)
+  // 1) respons richMessage (tap tombol / pilih list)
   const richReply = readRichReply(event.message)
   if (richReply) {
+    logger.info(`🖱️  ${who} [${where}] memilih "${richReply.id}"`)
     const handler = richHandlers.get(richReply.id)
     if (handler) {
-      await handler(ctx, richReply)
+      try {
+        await handler(ctx, richReply)
+      } catch (err) {
+        logger.error({ err, id: richReply.id }, 'Handler richMessage gagal')
+      }
     } else {
-      logger.warn({ id: richReply.id, name: richReply.name }, 'Tidak ada handler untuk richMessage id ini')
+      logger.warn(`⚠️  Tidak ada handler untuk rich id "${richReply.id}"`)
     }
     return
   }
 
-  // Diagnostik: ada pesan respons richMessage tapi id gak kebaca
+  // 2) diagnostik: ada respons rich tapi id gak kebaca
   if (
     event.message?.interactiveResponseMessage ||
     event.message?.buttonsResponseMessage ||
     event.message?.listResponseMessage
   ) {
-    logger.warn({ message: event.message }, 'Respons richMessage gak dikenal, cek bentuk raw-nya')
+    logger.warn({ raw: event.message }, '🧩 Respons richMessage belum dikenal')
     return
   }
 
-  // 2) Cek multi-prefix
+  // 3) log pesan masuk biasa
+  logger.info(`💬 ${who} [${where}] ${describeMessage(event.message)}`)
+
+  // 4) routing command multi-prefix
   if (!ctx.body) return
-  
+
   let matchedPrefix = ''
   for (const prefix of config.prefix) {
     if (ctx.body.startsWith(prefix)) {
@@ -47,7 +74,6 @@ export async function route(client, event) {
       break
     }
   }
-  
   if (!matchedPrefix) return
 
   const withoutPrefix = ctx.body.slice(matchedPrefix.length).trim()
@@ -57,25 +83,9 @@ export async function route(client, event) {
   const feature = getFeature(commandName)
   if (!feature) return
 
-  // 3) Cek owner
   if (feature.owner && !ctx.isOwner) {
     await ctx.reply('🚫 Fitur ini khusus owner bot.')
     return
-  }
-
-  // 4) Cek cooldown (skip untuk owner)
-  if (!ctx.isOwner && config.cooldown > 0) {
-    const { onCooldown, remainingMs } = checkCooldown(
-      ctx.sender,
-      commandName,
-      feature.cooldown || config.cooldown
-    )
-    
-    if (onCooldown) {
-      const remainingSec = (remainingMs / 1000).toFixed(1)
-      await ctx.reply(`⏳ Tunggu ${remainingSec} detik sebelum menggunakan command ini lagi.`)
-      return
-    }
   }
 
   ctx.prefix = matchedPrefix
@@ -83,6 +93,7 @@ export async function route(client, event) {
   ctx.args = args
   ctx.text = args.join(' ')
 
+  logger.info(`⚙️  [CMD] ${matchedPrefix}${commandName} dijalankan oleh +${num(ctx.sender)}`)
   try {
     await feature.run(ctx)
   } catch (err) {

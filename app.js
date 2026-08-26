@@ -14,8 +14,8 @@ client.on('auth_paired', ({ credentials }) => {
   logger.info(`Berhasil pairing sebagai ${credentials.meJid}`)
 })
 
-// zapo-js TIDAK auto-reconnect by design — reconnection loop dengan backoff
-// ditangani manual di sini (lihat https://zapo.to/en/guides/reconnection).
+// zapa-js TIDAK auto-reconnect by design — reconnection loop dengan backoff
+// ditangani manual di sini.
 const MAX_RECONNECT_ATTEMPTS = 10
 let reconnectAttempt = 0
 
@@ -57,6 +57,15 @@ client.on('message', (event) => {
   route(client, event).catch((err) => logger.error({ err }, 'Gagal memproses pesan masuk'))
 })
 
+// Diagnostik protokol — nangkep pesan yang gagal diproses client
+client.on('debug_unhandled_stanza', (e) => {
+  logger.warn({ detail: e }, '🧩 Stanza tidak tertangani client')
+})
+
+client.on('debug_client_error', (e) => {
+  logger.error({ detail: e }, '🧩 Error internal client')
+})
+
 async function main() {
   await client.connect()
   logger.info('Bot berjalan. Tekan Ctrl+C untuk berhenti.')
@@ -67,7 +76,6 @@ main().catch((err) => {
   process.exit(1)
 })
 
-// Graceful shutdown — disconnect() menyimpan kredensial, tidak logout.
 process.on('SIGINT', async () => {
   logger.info('Mematikan bot...')
   await client.disconnect()

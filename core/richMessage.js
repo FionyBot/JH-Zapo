@@ -1,25 +1,15 @@
 /**
  * richMessage.js
  *
- * WhatsApp sudah pelan-pelan mempensiunkan `buttonsMessage` / `listMessage` versi lama
- * (yang sekarang cuma jalan penuh di akun WhatsApp Business API resmi). Pengganti
- * modern-nya adalah `interactiveMessage` + `nativeFlowMessage` — sering disebut
- * "richMessage" — yang dipakai WA Web/mobile terbaru untuk quick-reply button
- * maupun list/menu select. Zapo-JS belum punya typed builder untuk ini, jadi kita
- * susun sendiri sebagai raw Proto.IMessage lalu kirim lewat client.message.send().
+ * Builder + reader untuk interactiveMessage + nativeFlowMessage (richMessage),
+ * pengganti modern buttonsMessage / listMessage yang dipensiunkan WhatsApp.
  *
- * Referensi bentuk paramsJson diverifikasi dari beberapa implementasi komunitas
- * (native_flow: quick_reply & single_select) di ekosistem WhatsApp Web protocol.
+ * Referensi bentuk field mengikuti raw Proto.IMessage yang di-decode zapo-js
+ * (identik dengan protobuf resmi WhatsApp / konvensi Baileys).
  */
 
 /**
- * Bikin richMessage berisi tombol quick-reply (pengganti buttonsMessage lama).
- *
- * @param {object} opts
- * @param {string} opts.text - isi body pesan
- * @param {string} [opts.footer] - teks footer kecil di bawah
- * @param {{ id: string, text: string }[]} opts.buttons - maks ±3 tombol disarankan
- * @returns {import('zapo-js').proto.IMessage}
+ * Bikin richMessage berisi tombol quick-reply.
  */
 export function richButtons({ text, footer, buttons }) {
   return {
@@ -38,15 +28,7 @@ export function richButtons({ text, footer, buttons }) {
 }
 
 /**
- * Bikin richMessage berisi list/menu single-select (pengganti listMessage lama).
- *
- * @param {object} opts
- * @param {string} opts.text - isi body pesan
- * @param {string} [opts.footer] - teks footer kecil di bawah
- * @param {string} opts.title - judul list yang muncul saat dibuka
- * @param {string} opts.buttonText - teks tombol pembuka list, mis. "Lihat menu"
- * @param {{ title: string, rows: { id: string, title: string, description?: string }[] }[]} opts.sections
- * @returns {import('zapo-js').proto.IMessage}
+ * Bikin richMessage berisi list/menu single-select.
  */
 export function richList({ text, footer, title, buttonText, sections }) {
   return {
@@ -78,36 +60,89 @@ export function richList({ text, footer, title, buttonText, sections }) {
 }
 
 /**
- * Baca balasan dari richMessage (klik tombol quick_reply atau pilih item single_select).
- * Balasan keduanya masuk sebagai `interactiveResponseMessage.nativeFlowResponseMessage`,
- * dengan `paramsJson` berisi minimal `{ id: '<id yang lo set di atas>' }`.
+ * Baca balasan richMessage (tap tombol / pilih list) dari pesan masuk.
+ * Menangani SEMUA jalur proto yang diketahui mengirim respons tap:
  *
- * @param {import('zapo-js').proto.IMessage | null | undefined} message
- * @returns {{ name: string, id: string, raw: Record<string, unknown> } | undefined}
+ *  1. templateButtonReplyMessage  → tap quick_reply di mayoritas klien (Android)
+ *  2. interactiveResponseMessage  → nativeFlow modern (single_select & sebagian quick_reply)
+ *  3. buttonsResponseMessage      → buttons legacy
+ *  4. listResponseMessage         → list legacy
+ *  5. extendedTextMessage quoted  → fallback klien yang ngirim tap sebagai teks
  */
 export function readRichReply(message) {
   if (!message) return undefined
 
-  // 1) nativeFlow modern (quick_reply & single_select)
+  // 1) ✅ JALUR UTAMA TAP TOMBOL: field resmi proto WhatsApp.
+  //    `id` yang lo set di buttonParamsJson balik lagi lewat `selectedId`.
+  const tpl = message.templateButtonReplyMessage
+  if (tpl?.selectedId) {
+    return {
+      name: 'template_button_reply',
+      id: tpl.selectedId,
+      raw: { selectedDisplayText: tpl.selectedDisplayText }
+    }
+  }
+
+  // 2) nativeFlow modern (single_select list, quick_reply di sebagian klien)
   const flow = message.interactiveResponseMessage?.nativeFlowResponseMessage
   if (flow) {
     let params = {}
     try {
       params = flow.paramsJson ? JSON.parse(flow.paramsJson) : {}
-    } catch { /* JSON invalid, biarkan kosong */ }
+    } catch {
+      // paramsJson bukan JSON valid, biarkan kosong
+    }
     const id = params.id ?? params.selected_row_id ?? params.row_id ?? ''
     if (id) return { name: flow.name ?? 'native_flow', id, raw: params }
   }
 
-  // 2) quick_reply di beberapa klien (Android) datang sebagai bentuk legacy ini
+  // 3) buttons legacy
   const btn = message.buttonsResponseMessage
   if (btn?.selectedButtonId) {
     return { name: 'buttons_response', id: btn.selectedButtonId, raw: btn }
   }
 
-  // 3) list legacy
+  // 4) list legacy
   const rowId = message.listResponseMessage?.singleSelectReply?.selectedRowId
-  if (rowId) return { name: 'list_response', id: rowId, raw: message.listResponseMessage }
+  if (rowId) {
+    return { name: 'list_response', id: rowId, raw: message.listResponseMessage }
+  }
+
+  // 5) FALLBACK: klien ngirim tap sebagai TEKS biasa yang nge-quote pesan tombol
+  const ext = message.extendedTextMessage
+  const quoted = ext?.contextInfo?.quotedMessage
+  const interactive =
+    quoted?.interactiveMessage ??
+    quoted?.viewOnceMessage?.message?.interactiveMessage
+  const buttons = interactive?.nativeFlowMessage?.buttons
+
+  if (ext?.text && Array.isArray(buttons)) {
+    for (const b of buttons) {
+      let params = {}
+      try {
+        params = JSON.parse(b.buttonParamsJson || '{}')
+      } catch {
+        continue
+      }
+
+      // quick_reply: { display_text, id }
+      if (params.id && params.display_text === ext.text) {
+        return { name: 'quoted_quick_reply', id: params.id, raw: params }
+      }
+
+      // single_select: sections[].rows[]
+      for (const section of params.sections ?? []) {
+        for (const row of section.rows ?? []) {
+          if (
+            row.id &&
+            (row.title === ext.text || `${row.title}\n${row.description}` === ext.text)
+          ) {
+            return { name: 'quoted_single_select', id: row.id, raw: row }
+          }
+        }
+      }
+    }
+  }
 
   return undefined
 }

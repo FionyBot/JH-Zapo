@@ -1,37 +1,28 @@
 /**
  * bot.config.js
- * Konfigurasi utama bot. JANGAN commit file ini kalau lo isi nomor/data pribadi
- * yang sensitif — tapi karena isinya cuma prefix & nomor owner (bukan credential),
- * ini aman masuk git selama lo gak taruh secret di sini.
- *
- * Credential WhatsApp yang sebenarnya (session) disimpan terpisah di folder
- * `.session/` (lihat core/session.js) — folder itu yang WAJIB masuk .gitignore.
+ * Konfigurasi utama bot. Credential WhatsApp (session) disimpan terpisah di
+ * folder `.session/` — folder itu yang WAJIB masuk .gitignore.
  */
+
 const prefix = ['.', '!', '/', '#']
 
 export default {
-  // Prefix command, contoh: "!ping", ".ping", "#ping"
   prefix,
-  mainPrefix: prefix[0],
+  mainPrefix: prefix[0], // prefix utama buat tampilan menu/contoh
 
-  // ID sesi WhatsApp (biarin "default" kalau cuma 1 akun)
   sessionId: 'default',
 
-  // Nomor owner bot, format internasional tanpa "+". Bisa lebih dari satu.
   owners: ['62895405449333'],
 
-  // Level log: fatal | error | warn | info | debug | trace
   logLevel: 'info',
+  libraryLogLevel: 'warn', // log internal zapo-js (biar gak berisik)
 
-  // Nama bot, dipakai di banner QR & pesan menu
   botName: 'Fiony Bot',
 
   cooldown: 3000,
 
   qr: {
-    // Tampilkan QR versi kecil (unicode half-block) di terminal
     small: true,
-    // Simpan juga QR sebagai file PNG supaya bisa di-scan dari HP lain / di-share
     saveAsImage: true,
     imagePath: '.session/qr.png'
   }
