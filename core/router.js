@@ -3,6 +3,9 @@ import { logger } from './logger.js'
 import { buildContext } from './context.js'
 import { readRichReply } from './richMessage.js'
 import { getFeature } from './features.js'
+import { checkCooldown, checkFlood } from './cooldown.js'
+import { touchUser, incrementCommand } from './db.js'
+import { sendTyping, markRead } from './presence.js'
 
 const richHandlers = new Map()
 
@@ -34,6 +37,11 @@ export async function route(client, event) {
   const who = `${ctx.pushName || 'Anonim'} +${num(ctx.sender)}`
   const where = ctx.isGroup ? 'GRUP' : 'PRIV'
 
+  // Auto-read pesan masuk
+  if (config.autoRead) {
+    void markRead(client, event)
+  }
+
   // 1) respons richMessage (tap tombol / pilih list)
   const richReply = readRichReply(event.message)
   if (richReply) {
@@ -51,11 +59,12 @@ export async function route(client, event) {
     return
   }
 
-  // 2) diagnostik: ada respons rich tapi id gak kebaca
+  // 2) diagnostik respons rich yang id-nya gak kebaca
   if (
     event.message?.interactiveResponseMessage ||
     event.message?.buttonsResponseMessage ||
-    event.message?.listResponseMessage
+    event.message?.listResponseMessage ||
+    event.message?.templateButtonReplyMessage
   ) {
     logger.warn({ raw: event.message }, '🧩 Respons richMessage belum dikenal')
     return
@@ -83,9 +92,43 @@ export async function route(client, event) {
   const feature = getFeature(commandName)
   if (!feature) return
 
+  // Catat user ke database
+  const user = touchUser(ctx.sender, ctx.pushName)
+
+  // User di-ban? (owner kebal)
+  if (user?.banned && !ctx.isOwner) {
+    logger.info(`🚫 ${who} [${where}] di-ban — command ${commandName} ditolak`)
+    await ctx.reply('🚫 Kamu telah di-ban oleh owner bot.')
+    return
+  }
+
+  // Fitur khusus owner
   if (feature.owner && !ctx.isOwner) {
     await ctx.reply('🚫 Fitur ini khusus owner bot.')
     return
+  }
+
+  // Anti-spam (flood protection)
+  if (!ctx.isOwner && config.antiSpam?.enabled) {
+    const flood = checkFlood(ctx.sender, config.antiSpam)
+    if (flood.flooded) {
+      await ctx.reply(`🐢 Pelan-pelan! Tunggu ${(flood.remainingMs / 1000).toFixed(0)} detik sebelum kirim command lagi.`)
+      return
+    }
+  }
+
+  // Cooldown per-command
+  if (!ctx.isOwner) {
+    const cd = checkCooldown(ctx.sender, commandName, feature.cooldown ?? config.cooldown ?? 0)
+    if (cd.onCooldown) {
+      await ctx.reply(`⏳ Tunggu ${(cd.remainingMs / 1000).toFixed(1)} detik lagi buat pakai ${matchedPrefix}${commandName}.`)
+      return
+    }
+  }
+
+  // Indikator "sedang mengetik..."
+  if (config.typingPresence) {
+    void sendTyping(client, ctx.chat)
   }
 
   ctx.prefix = matchedPrefix
@@ -93,6 +136,7 @@ export async function route(client, event) {
   ctx.args = args
   ctx.text = args.join(' ')
 
+  incrementCommand(ctx.sender)
   logger.info(`⚙️  [CMD] ${matchedPrefix}${commandName} dijalankan oleh +${num(ctx.sender)}`)
   try {
     await feature.run(ctx)
