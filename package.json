@@ -1,0 +1,22 @@
+{
+  "name": "Fiony Bot",
+  "version": "0.1.0",
+  "description": "Base bot WhatsApp custom by JamvanHax0r di atas Zapo-JS — plain JavaScript, feature-based, dengan dukungan richMessage (nativeFlow buttons & list).",
+  "type": "module",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js"
+  },
+  "dependencies": {
+    "zapo-js": "latest",
+    "@zapo-js/store-sqlite": "latest",
+    "better-sqlite3": "latest",
+    "pino": "^9.4.0",
+    "pino-pretty": "^13.0.0",
+    "qrcode": "^1.5.4"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}
