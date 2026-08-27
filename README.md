@@ -1,7 +1,6 @@
 # JH-Base WhatsApp Bot with Zapo-JS
-# Developed by JamvanHax0r
-# Thanks to BCCTeam - FLMGroup - Fiony Bot - And You Guys
-
+Developed by JamvanHax0r
+Thanks to BCCTeam - FLMGroup - Fiony Bot - And You Guys
 Base bot WhatsApp custom di atas [Zapo-JS](https://zapo.to) (`zapo-js`) — plain JavaScript (ESM, tanpa TypeScript), feature-based, dengan dukungan **richMessage** (bentuk tombol & list terbaru WhatsApp).
 
 ## Kenapa ini bukan "base bot Zapo-JS" pada umumnya
