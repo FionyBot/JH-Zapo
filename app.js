@@ -5,7 +5,7 @@
  * app.js — FionyVerse entry point.
  * [Update] Interaktif (node app.js) maupun non-interaktif (pm2) — prompt cuma
  * muncul kalau TTY tersedia & config belum nyetel method/nomor — FLEKSIBEL.
- * Jantung bot! Hati2 dlm mengubah file ini! 
+ * Jantung bot! Hati2 dlm mengubah file ini!
  */
 import { createStore, WaClient } from 'zapo-js'
 import { createSqliteStore } from '@zapo-js/store-sqlite'
@@ -18,6 +18,8 @@ import { setupPairing } from './auth/pairingHandler.js'
 import { setupConnection, markShutdown } from './auth/connectionManager.js'
 import { loadFeatures } from './feat/loader.js'
 import { route } from './handlers/messageHandler.js'
+import { setupGroupHandler } from './handlers/groupHandler.js'
+import { setupErrorHandler } from './handlers/errorHandler.js'
 import { normalizeNumber } from './core/staff.js'
 
 function ask(question) {
@@ -34,7 +36,6 @@ async function chooseAuth() {
   if (config.auth.method === 'qr') return 'qr'
   if (config.auth.method === 'pairing') return 'pairing'
 
-  // Non-interaktif (pm2): gak nanya-nanya, putuskan dari config
   if (!process.stdin.isTTY) {
     logger.warn('ℹ️ Mode non-interaktif terdeteksi (pm2). Auth diambil dari config.')
     return config.auth.pairingNumber ? 'pairing' : 'qr'
@@ -76,8 +77,14 @@ const client = new WaClient(
 async function main() {
   logger.info(`🚀 ${config.botName} starting...`)
 
+  // Setup error handler PERTAMA di sini bray (biar semua error ke-catch)
+  setupErrorHandler()
+
   await loadFeatures()
   setupConnection(client)
+
+  // Setup handlers di sini
+  setupGroupHandler(client)
 
   client.on('message', (event) => {
     route(client, event).catch((err) => logger.error({ err }, 'Gagal memproses pesan'))
@@ -86,7 +93,6 @@ async function main() {
   const method = await chooseAuth()
 
   if (method === 'pairing') {
-    // Dari config (pm2) kalau ada, sonst tanya interaktif
     let number = normalizeNumber(config.auth.pairingNumber ?? '')
     if (!number && process.stdin.isTTY) {
       number = normalizeNumber(await ask('📞 Input Jawaban (nomor pairing, contoh 628xxx / 08xxx): '))
