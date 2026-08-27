@@ -110,5 +110,4 @@ onRichReply('rich:hai', async (ctx) => {
 - [Raw proto sends](https://zapo.to/en/guides/raw-sends)
 - [Reconnection](https://zapo.to/en/guides/reconnection)
 
-**• Enjoy code, enjoy JH's code!** 
 **• © 2026 by JamvanHax0r — All Rights Reserved**
