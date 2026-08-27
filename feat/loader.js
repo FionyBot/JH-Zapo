@@ -1,13 +1,19 @@
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ * loader.js — Scan feat/xx/xxx.js, daftarkan ke registry, support reload.
+ */
 import { readdir } from 'node:fs/promises'
 import { join, extname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { logger } from './logger.js'
+import { logger } from '../core/logger.js'
 
-const FEATURES_DIR = fileURLToPath(new URL('../features/', import.meta.url))
+const FEATURES_DIR = fileURLToPath(new URL('.', import.meta.url))
+const SELF = fileURLToPath(import.meta.url)
 
 const byCommand = new Map()
 let loadedCount = 0
-const cooldowns = new Map() // Track cooldown per user per command
 
 async function walk(dirPath) {
   const entries = await readdir(dirPath, { withFileTypes: true })
@@ -16,7 +22,7 @@ async function walk(dirPath) {
     const fullPath = join(dirPath, entry.name)
     if (entry.isDirectory()) {
       files.push(...(await walk(fullPath)))
-    } else if (extname(entry.name) === '.js') {
+    } else if (extname(entry.name) === '.js' && fullPath !== SELF) {
       files.push(fullPath)
     }
   }
@@ -62,24 +68,4 @@ export function listFeatures() {
 
 export function featureCount() {
   return loadedCount
-}
-
-/**
- * Cek apakah user masih dalam cooldown untuk command tertentu
- * Return: { onCooldown: boolean, remainingMs: number }
- */
-export function checkCooldown(userId, commandName, cooldownMs = 3000) {
-  const key = `${userId}:${commandName}`
-  const now = Date.now()
-  const lastUsed = cooldowns.get(key) || 0
-  
-  if (now - lastUsed < cooldownMs) {
-    return {
-      onCooldown: true,
-      remainingMs: cooldownMs - (now - lastUsed)
-    }
-  }
-  
-  cooldowns.set(key, now)
-  return { onCooldown: false, remainingMs: 0 }
 }

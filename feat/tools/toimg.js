@@ -1,6 +1,11 @@
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ */
 import sharp from 'sharp'
 import { logger } from '../../core/logger.js'
-import { downloadMedia } from '../../core/media.js'
+import { downloadMedia } from '../../lib/media.js'
 
 export default {
   name: 'toimg',
@@ -21,11 +26,10 @@ export default {
       return
     }
 
-    // WebP → PNG biar aman dirender di semua device
     const png = await sharp(media.buffer).png().toBuffer()
 
     const attempts = [
-      { type: 'image', media: png, mimetype: 'image/png', caption: '🖼️ Nih hasilnya!' },
+      { type: 'image', media: png, mimetype: 'image/png', caption: '🖼️ Ini dia hasilnya, Kak!' },
       { type: 'image', media: png, mimetype: 'image/png' },
       { type: 'image', buffer: png, mimetype: 'image/png' }
     ]

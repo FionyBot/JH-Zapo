@@ -1,15 +1,14 @@
 /**
- * presence.js — typing indicator & read receipt.
- * Keduanya pakai method resmi dari referensi zapo:
- *  - client.message.sendReceipt(event, { type: 'read' })
- *  - client.presence.sendChatstate(jid, { type: 'composing' })
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ * presence.js — Typing indicator & read receipt
  */
 import { logger } from './logger.js'
 
 let readWarned = false
 let typingWarned = false
 
-/** Tandai pesan masuk sebagai dibaca (centang biru). */
 export async function markRead(client, event) {
   try {
     await client.message.sendReceipt(event, { type: 'read' })
@@ -21,13 +20,11 @@ export async function markRead(client, event) {
   }
 }
 
-/** Nampilin indikator "sedang mengetik..." di chat. */
 export async function sendTyping(client, chat) {
   try {
     await client.presence.sendChatstate(chat, { type: 'composing' })
   } catch {
     try {
-      // fallback bentuk options alternatif kalau yang pertama ditolak
       await client.presence.sendChatstate(chat, { state: 'composing' })
     } catch (err) {
       if (!typingWarned) {

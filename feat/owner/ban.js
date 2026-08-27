@@ -1,5 +1,10 @@
-import config from '../../bot.config.js'
-import { touchUser, setBanned, topUsers, totalUsers } from '../../core/db.js'
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ */
+import config from '../../config.js'
+import { touchUser, setBanned, topUsers, totalUsers } from '../../core/database.js'
 
 export default {
   name: 'ban',
@@ -8,7 +13,6 @@ export default {
   admin: true,
   description: 'Ban/unban user (via nomor atau tag) & daftar user',
   async run(ctx) {
-    // .users → daftar user teraktif
     if (ctx.command === 'users') {
       const top = topUsers(10)
       const lines = top.map(
@@ -18,10 +22,8 @@ export default {
       return
     }
 
-    // 1) Prioritas: target di-tag/mention
     let targetJid = ctx.mentioned?.[0]
 
-    // 2) Fallback: nomor diketik manual
     if (!targetJid) {
       const targetNumber = (ctx.args[0] ?? '').replace(/\D/g, '')
       if (!targetNumber) {
@@ -37,7 +39,6 @@ export default {
     const isLid = targetJid.endsWith('@lid')
     const label = isLid ? 'User yang di-tag' : `+${targetNumber}`
 
-    // Pengaman: owner gak bisa di-ban
     const targetStaff = config.staff.find((s) => s.number === targetNumber)
     if (targetStaff?.role === 'owner') {
       await ctx.reply('🚫 Gak bisa ban/unban sesama owner!')

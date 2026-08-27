@@ -1,7 +1,12 @@
-import config from '../../bot.config.js'
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ */
+import config from '../../config.js'
 import { logger } from '../../core/logger.js'
-import { downloadMedia } from '../../core/media.js'
-import { buildSticker, MAX_STICKER_BYTES } from '../../core/sticker.js'
+import { downloadMedia } from '../../lib/media.js'
+import { buildSticker, MAX_STICKER_BYTES } from '../../lib/sticker.js'
 
 export default {
   name: 'sticker',
@@ -20,10 +25,7 @@ export default {
       return
     }
 
-    // Feedback biar gak kerasa "diem" pas video diolah
-    if (media.kind === 'video') {
-      await ctx.react('⏳').catch(() => {})
-    }
+    if (media.kind === 'video') await ctx.react('⏳').catch(() => {})
 
     let buf
     try {
@@ -41,7 +43,6 @@ export default {
       throw err
     }
 
-    // Limit WA ±1MB buat stiker — kalau lewat, jangan dipaksa, kasih tau ramah
     if (buf.length > MAX_STICKER_BYTES) {
       await ctx.reply(
         `😅 Videonya kelewat berat buat limit stiker WA (±1MB): hasil ${(buf.length / 1024).toFixed(0)}KB.\n` +

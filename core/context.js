@@ -1,5 +1,12 @@
-import config from '../bot.config.js'
-import { richButtons, richList } from './richMessage.js'
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ * context.js — Build context object untuk setiap pesan
+ */
+import config from '../config.js'
+import { richButtons, richList } from '../lib/richMessage.js'
+import { getStaffEntry } from './staff.js'
 
 function extractText(message) {
   if (!message) return undefined
@@ -22,7 +29,7 @@ export function buildContext(client, event) {
   const lidJid = primary?.endsWith('@lid') ? primary : alt?.endsWith('@lid') ? alt : undefined
 
   const senderNumber = digits(pnJid)
-  const staff = config.staff.find((s) => s.number === senderNumber)
+  const staff = getStaffEntry(senderNumber, lidJid)
   const role = staff?.role ?? null
 
   const ctx = {
@@ -34,7 +41,7 @@ export function buildContext(client, event) {
     senderNumber,
     pushName: event.pushName,
     isGroup: Boolean(event.key.isGroup),
-    receivedAt: Date.now(), // 👈 buat latensi asli di .ping
+    receivedAt: Date.now(),
 
     mentioned: event.message?.extendedTextMessage?.contextInfo?.mentionedJid ?? [],
 

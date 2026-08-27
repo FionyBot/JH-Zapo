@@ -1,4 +1,9 @@
-import { getUser } from '../../core/db.js'
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ */
+import { getUser } from '../../core/database.js'
 
 export default {
   name: 'me',

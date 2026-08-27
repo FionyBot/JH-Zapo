@@ -1,11 +1,13 @@
 /**
- * cooldown.js — anti-spam & jeda per-command (in-memory, cukup buat 1 proses bot).
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ * cooldown.js — Anti-spam & cooldown management
  */
 
-const perUserCommand = new Map() // "jid:command" -> timestamp terakhir
-const perUserFlood = new Map()   // jid -> { hits: number[], mutedUntil: number }
+const perUserCommand = new Map()
+const perUserFlood = new Map()
 
-/** Cek jeda per-command. */
 export function checkCooldown(userId, command, cooldownMs = 0) {
   if (!cooldownMs || cooldownMs <= 0) return { onCooldown: false, remainingMs: 0 }
 
@@ -21,7 +23,6 @@ export function checkCooldown(userId, command, cooldownMs = 0) {
   return { onCooldown: false, remainingMs: 0 }
 }
 
-/** Cek flood: terlalu banyak command dalam jendela waktu → dibisukan sementara. */
 export function checkFlood(userId, { max = 5, windowMs = 10_000, muteMs = 30_000 } = {}) {
   const now = Date.now()
   const state = perUserFlood.get(userId) ?? { hits: [], mutedUntil: 0 }

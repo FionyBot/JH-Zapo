@@ -1,14 +1,23 @@
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ * logger.js — Logger estetik ala-ala wkk
+ */
 import { createPinoLogger } from 'zapo-js'
-import config from '../bot.config.js'
+import config from '../config.js'
 
-// Logger aktivitas bot — yang tampil estetik di terminal
 export const logger = await createPinoLogger({
   level: config.logLevel,
-  pretty: true
+  pretty: true,
+  formatters: {
+    level: (label) => ({ level: label.toUpperCase() })
+  },
+  timestamp: () => `,"time":"${new Date().toLocaleTimeString('id-ID')}"`
 })
 
-// Logger internal zapo-js — senyap biar log protokol gak nge-spam.
-// Ganti ke 'debug' kalau suatu saat butuh ngulik protokol dalam.
+logger.success = (msg, ...args) => logger.info({ ...args }, msg)
+
 export const clientLogger = await createPinoLogger({
   level: config.libraryLogLevel ?? 'warn',
   pretty: true

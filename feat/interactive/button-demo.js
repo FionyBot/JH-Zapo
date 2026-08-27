@@ -1,10 +1,15 @@
-import config from '../../bot.config.js'
-import { onRichReply } from '../../core/router.js'
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ */
+import config from '../../config.js'
+import { onRichReply } from '../../handlers/messageHandler.js'
 
 onRichReply('rich:hai', async (ctx) => {
   const name = ctx.pushName || 'kawan'
   await ctx.reply(
-    `Halo ${name}! 👋\nAda yang bisa ${config.botName} bantu?\nKetik ${config.mainPrefix}menu buat lihat semua command.`
+    `Halo ${name}! 👋\nAda yang bisa ${config.botName} bantu?\nKetik ${config.mainPrefix}menu buat lihat semua command, ya.`
   )
 })
 
@@ -17,9 +22,9 @@ onRichReply('rich:info', async (ctx) => {
   await ctx.reply(
     `ℹ️ *INFO ${config.botName.toUpperCase()}*\n\n` +
       `• Base: Zapo-JS (richMessage nativeFlow)\n` +
-      `• Prefix: ${config.prefix.join(' ')}\n` +
+      `• Prefix: ${config.prefixes.join(' ')}\n` +
       `• Owner:\n${ownerList}\n\n` +
-      `Masih dalam pengembangan 🚧`
+      `Masih dalam tahap pengembangan 🚧`
   )
 })
 

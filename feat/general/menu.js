@@ -1,6 +1,11 @@
-import config from '../../bot.config.js'
-import { listFeatures } from '../../core/features.js'
-import { totalUsers } from '../../core/db.js'
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ */
+import config from '../../config.js'
+import { listFeatures } from '../loader.js'
+import { totalUsers } from '../../core/database.js'
 
 const CATEGORY = {
   general: '📌 GENERAL',
@@ -8,7 +13,8 @@ const CATEGORY = {
   owner: '👑 OWNER',
   tools: '🛠️ TOOLS',
   media: '🎨 MEDIA',
-  ai: '🤖 AI'
+  ai: '🤖 AI',
+  group: '👥 GROUP'
 }
 
 function fmtUptime(ms) {
@@ -57,7 +63,7 @@ export default {
       lines.push('')
     }
 
-    lines.push(`> _Made with ♡ by JH a.k.a Dhika_ • _${config.botName} • dibangun di atas Zapo-JS_`)
+    lines.push(`> _*Made with ♡ by JamvanHax0r*_\n> _*• ${config.botName} x Zapo-JS •*_`)
     await ctx.reply(lines.join('\n'))
   }
 }

@@ -4,3 +4,7 @@ node_modules/
 *.sqlite-journal
 npm-debug.log*
 .DS_Store
+session/
+logs/
+*.log
+*.backup

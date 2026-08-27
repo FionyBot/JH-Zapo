@@ -1,11 +1,14 @@
 /**
- * db.js — database user sederhana pakai better-sqlite3.
- * File DB disimpan di .session/users.sqlite (otomatis ke-gitignore lewat pola *.sqlite).
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ * database.js — Database abstraction
  */
 import Database from 'better-sqlite3'
 import fs from 'node:fs'
+import { logger } from './logger.js'
 
-const sessionDir = '.session'
+const sessionDir = './session'
 if (!fs.existsSync(sessionDir)) {
   fs.mkdirSync(sessionDir, { recursive: true })
 }
@@ -27,7 +30,6 @@ export function getUser(jid) {
   return db.prepare('SELECT * FROM users WHERE jid = ?').get(jid)
 }
 
-/** Catat user baru / perbarui last_seen & nama. Return row user. */
 export function touchUser(jid, name) {
   const now = Date.now()
   const existing = getUser(jid)
@@ -61,4 +63,3 @@ export function topUsers(limit = 10) {
 export function totalUsers() {
   return db.prepare('SELECT COUNT(*) AS c FROM users').get().c
 }
-

@@ -1,83 +1,129 @@
-import { client } from './core/session.js'
-import { logger } from './core/logger.js'
-import { showQr } from './core/qr.js'
-import { loadFeatures } from './core/features.js'
-import { route } from './core/router.js'
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
+ * app.js — FionyVerse entry point.
+ * [Update] Interaktif (node app.js) maupun non-interaktif (pm2) — prompt cuma
+ * muncul kalau TTY tersedia & config belum nyetel method/nomor — FLEKSIBEL.
+ * Jantung bot! Hati2 dlm mengubah file ini! 
+ */
+import { createStore, WaClient } from 'zapo-js'
+import { createSqliteStore } from '@zapo-js/store-sqlite'
+import { createInterface } from 'node:readline'
+import fs from 'node:fs'
+import config from './config.js'
+import { logger, clientLogger } from './core/logger.js'
+import { setupQR } from './auth/qrHandler.js'
+import { setupPairing } from './auth/pairingHandler.js'
+import { setupConnection, markShutdown } from './auth/connectionManager.js'
+import { loadFeatures } from './feat/loader.js'
+import { route } from './handlers/messageHandler.js'
+import { normalizeNumber } from './core/staff.js'
 
-await loadFeatures()
-
-client.on('auth_qr', ({ qr, ttlMs }) => {
-  showQr(qr, ttlMs).catch((err) => logger.error({ err }, 'Gagal menampilkan QR'))
-})
-
-client.on('auth_paired', ({ credentials }) => {
-  logger.info(`Berhasil pairing sebagai ${credentials.meJid}`)
-})
-
-// zapa-js TIDAK auto-reconnect by design — reconnection loop dengan backoff
-// ditangani manual di sini.
-const MAX_RECONNECT_ATTEMPTS = 10
-let reconnectAttempt = 0
-
-client.on('connection', (event) => {
-  if (event.status === 'open') {
-    logger.info(`Terhubung${event.isNewLogin ? ' (login baru)' : ''}`)
-    reconnectAttempt = 0
-    return
-  }
-
-  logger.warn({ reason: event.reason, isLogout: event.isLogout }, 'Koneksi terputus')
-
-  if (event.isLogout) {
-    logger.error('Device di-unlink. Hapus folder .session/ lalu jalankan ulang untuk pairing baru.')
-    return
-  }
-
-  void reconnectWithBackoff()
-})
-
-async function reconnectWithBackoff() {
-  if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
-    logger.error(`Menyerah setelah ${reconnectAttempt} percobaan reconnect.`)
-    return
-  }
-  const delayMs = Math.min(30_000, 1_000 * 2 ** reconnectAttempt)
-  reconnectAttempt += 1
-  logger.info(`Reconnect dalam ${delayMs}ms (percobaan ke-${reconnectAttempt})`)
-  await new Promise((resolve) => setTimeout(resolve, delayMs))
-  try {
-    await client.connect()
-  } catch (err) {
-    logger.error({ err }, 'Reconnect gagal')
-    void reconnectWithBackoff()
-  }
+function ask(question) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout })
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close()
+      resolve(answer.trim())
+    })
+  })
 }
 
-client.on('message', (event) => {
-  route(client, event).catch((err) => logger.error({ err }, 'Gagal memproses pesan masuk'))
+async function chooseAuth() {
+  if (config.auth.method === 'qr') return 'qr'
+  if (config.auth.method === 'pairing') return 'pairing'
+
+  // Non-interaktif (pm2): gak nanya-nanya, putuskan dari config
+  if (!process.stdin.isTTY) {
+    logger.warn('ℹ️ Mode non-interaktif terdeteksi (pm2). Auth diambil dari config.')
+    return config.auth.pairingNumber ? 'pairing' : 'qr'
+  }
+
+  console.log('\n🤖 FionyVerse — Authentication')
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.log('  [1] 📱 QR Code (scan dari WhatsApp)')
+  console.log(`  [2] 🔑 Pairing Code (custom: ${config.auth.customCode})`)
+  const answer = await ask('\nInput Jawaban (ketik 1 / 2, lalu Enter): ')
+  return answer === '2' ? 'pairing' : 'qr'
+}
+
+const sessionDir = './session'
+if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true })
+
+const store = createStore({
+  backends: {
+    sqlite: createSqliteStore({ path: `${sessionDir}/state.sqlite`, driver: 'auto' })
+  },
+  providers: {
+    auth: 'sqlite', signal: 'sqlite', preKey: 'sqlite', session: 'sqlite',
+    identity: 'sqlite', senderKey: 'sqlite', appState: 'sqlite',
+    privacyToken: 'sqlite', messages: 'sqlite', threads: 'sqlite', contacts: 'sqlite'
+  }
 })
 
-// Diagnostik protokol — nangkep pesan yang gagal diproses client
-client.on('debug_unhandled_stanza', (e) => {
-  logger.warn({ detail: e }, '🧩 Stanza tidak tertangani client')
-})
-
-client.on('debug_client_error', (e) => {
-  logger.error({ detail: e }, '🧩 Error internal client')
-})
+const client = new WaClient(
+  {
+    store,
+    sessionId: 'default',
+    connectTimeoutMs: 15_000,
+    nodeQueryTimeoutMs: 30_000,
+    history: { enabled: true, requireFullSync: true }
+  },
+  clientLogger
+)
 
 async function main() {
-  await client.connect()
-  logger.info('Bot berjalan. Tekan Ctrl+C untuk berhenti.')
+  logger.info(`🚀 ${config.botName} starting...`)
+
+  await loadFeatures()
+  setupConnection(client)
+
+  client.on('message', (event) => {
+    route(client, event).catch((err) => logger.error({ err }, 'Gagal memproses pesan'))
+  })
+
+  const method = await chooseAuth()
+
+  if (method === 'pairing') {
+    // Dari config (pm2) kalau ada, sonst tanya interaktif
+    let number = normalizeNumber(config.auth.pairingNumber ?? '')
+    if (!number && process.stdin.isTTY) {
+      number = normalizeNumber(await ask('📞 Input Jawaban (nomor pairing, contoh 628xxx / 08xxx): '))
+      while (!number) {
+        number = normalizeNumber(await ask('Nomor tidak valid. Input Jawaban ulang: '))
+      }
+    }
+    if (!number) {
+      logger.error('❌ pairingNumber belum diset di config (mode non-interaktif).')
+      process.exit(1)
+    }
+
+    const requestCode = setupPairing(client, number)
+    await client.connect()
+    await requestCode()
+  } else {
+    setupQR(client)
+    await client.connect()
+  }
+
+  const state = client.auth.getState()
+  if (state?.registered) {
+    logger.success('✅ Bot berjalan. Ctrl+C buat berhenti.')
+  } else {
+    logger.info('⏳ Menunggu pairing... bot aktif begitu pairing sukses.')
+  }
 }
 
 main().catch((err) => {
-  logger.error({ err }, 'Gagal menjalankan bot')
+  logger.error({ err }, '❌ Gagal menjalankan bot')
   process.exit(1)
 })
 
 process.on('SIGINT', async () => {
-  logger.info('Mematikan bot...')
-  await client.disconnect()
+  logger.info('🛑 Mematikan bot...')
+  markShutdown()
+  try { clientLogger.level = 'error' } catch {}
+  await client.disconnect().catch(() => {})
   process.exit(0)
 })
