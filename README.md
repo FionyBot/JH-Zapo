@@ -217,4 +217,4 @@ benar-benar berguna untuk pembaca.
 
 ## Lisensi
 
-MIT
+MIT — © 2026 by JamvanHax0r - All Rights Reserved.
