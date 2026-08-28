@@ -1,33 +1,30 @@
 /**
- * © JamvanHax0r
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
  * hidetag.js — tag senyap semua member grup, dukung quote media/teks.
- *
- * Thanks to XN for fix
+ * Relay proto pesan yang di-quote apa adanya + suntik mentionedJid.
  */
 import { logger } from '../../core/logger.js'
+import { isGroupAdmin } from '../../core/permission.js'
 
 export default {
   name: 'hidetag',
   aliases: ['ht'],
   tags: 'group',
-  description: 'Tag senyap semua member grup, dukung quote media (admin grup/staff only)',
+  description: 'Tag senyap semua member grup, dukung quote media (admin grup/staff)',
   async run(ctx) {
     if (!ctx.isGroup) {
       await ctx.reply('🚫 Command ini khusus grup.')
       return
     }
 
-    const meta = await ctx.client.group.queryGroupMetadata(ctx.chat)
-
-    const senderPart = meta.participants.find(
-      (p) => p.jid === ctx.sender || (ctx.senderLid && p.jid === ctx.senderLid)
-    )
-    const isGroupAdmin = ['admin', 'superadmin'].includes(senderPart?.role ?? senderPart?.rank ?? '')
-    if (!ctx.isAdmin && !isGroupAdmin) {
-      await ctx.reply('🚫 Khusus admin grup / staff bot.')
+    if (!(await isGroupAdmin(ctx))) {
+      await ctx.reply('🚫 Khusus Admin grup / Staff bot.')
       return
     }
 
+    const meta = await ctx.client.group.queryGroupMetadata(ctx.chat)
     const jids = meta.participants.map((p) => p.jid)
     const text = ctx.text || ''
 

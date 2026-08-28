@@ -1,7 +1,14 @@
 /**
- * © JamvanHax0r
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass. 
+ * Hargai sebagaimana u mau dihargai.
  * tagall.js — mention KELIHATAN semua member + custom caption.
+ * [UPDATE AND FIX BELOW]
+ *
+ * Cek admin via helper resmi (isAdmin/isSuperAdmin flag zapo).
  */
+import { isGroupAdmin } from '../../core/permission.js'
+
 export default {
   name: 'tagall',
   aliases: ['tall', 'mentionall'],
@@ -13,22 +20,17 @@ export default {
       return
     }
 
-    const meta = await ctx.client.group.queryGroupMetadata(ctx.chat)
-
-    const senderPart = meta.participants.find(
-      (p) => p.jid === ctx.sender || (ctx.senderLid && p.jid === ctx.senderLid)
-    )
-    const isGroupAdmin = ['admin', 'superadmin'].includes(senderPart?.role ?? senderPart?.rank ?? '')
-    if (!ctx.isAdmin && !isGroupAdmin) {
-      await ctx.reply('🚫 Khusus admin grup / staff bot.')
+    if (!(await isGroupAdmin(ctx))) {
+      await ctx.reply('🚫 Khusus Admin grup / Staff bot.')
       return
     }
 
+    const meta = await ctx.client.group.queryGroupMetadata(ctx.chat)
     const jids = meta.participants.map((p) => p.jid)
     const caption = ctx.text || '📢 Semua kumpul sini!'
 
     const tags = jids.map((j) => `@${j.split('@')[0]}`).join(' ')
-    const text = `> _*🔔 TAGALL — ${meta.subject ?? 'Grup'}*_\n- Message: _${caption}_\n\n${tags}`
+    const text = `*TAGALL* — ${meta.subject ?? 'Grup'}\n${caption}\n\n${tags}`
 
     await ctx.client.message.send(ctx.chat, {
       extendedTextMessage: {

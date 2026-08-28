@@ -15,7 +15,7 @@ export default {
     pairingNumber: '',
   },
 
-  prefixes: ['.', '!', '/', '#', ',', '🦅', '😁'],
+  prefixes: ['.', '!', '/', '#', ',', '😁', '🦅'],
   mainPrefix: '.',
 
   staff: [
@@ -24,9 +24,14 @@ export default {
     { number: '6289698133663', role: 'admin', label: 'XN • Staff Admin' },
   ],
 
-  // Fitur grup yang butuh on/off (permission admin/staff).
-  // Nambah fitur advanced nanti (game, antilink) = tinggal tambah key di sini ya bray.
-  toggleable: ['welcome', 'bye'],
+  // Fitur grup yang butuh on/off (permission admin/staff)
+  toggleable: ['welcome', 'bye', 'antilink', 'game'],
+
+  // BLACKLIST domain antilink (default; bisa di-override per grup).
+  // Selain daftar ini = boleh. Yang di daftar = dihapus.
+  antilink: {
+    defaultBlacklist: 'wa.me,chat.whatsapp.com,t.me,telegram.me',
+  },
 
   sticker: {
     packName: 'Made with',

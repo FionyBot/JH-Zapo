@@ -3,9 +3,7 @@
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
  * app.js — FionyVerse entry point.
- * [Update] Interaktif (node app.js) maupun non-interaktif (pm2) — prompt cuma
- * muncul kalau TTY tersedia & config belum nyetel method/nomor — FLEKSIBEL.
- * Jantung bot! Hati2 dlm mengubah file ini!
+ * Jantung file! Hati2 dlm mengubah file ini!
  */
 import { createStore, WaClient } from 'zapo-js'
 import { createSqliteStore } from '@zapo-js/store-sqlite'
@@ -20,6 +18,8 @@ import { loadFeatures } from './feat/loader.js'
 import { route } from './handlers/messageHandler.js'
 import { setupGroupHandler } from './handlers/groupHandler.js'
 import { setupErrorHandler } from './handlers/errorHandler.js'
+import { checkAntilink } from './handlers/antilinkHandler.js'
+import { checkGameAnswer } from './handlers/gameHandler.js'
 import { normalizeNumber } from './core/staff.js'
 
 function ask(question) {
@@ -77,16 +77,15 @@ const client = new WaClient(
 async function main() {
   logger.info(`🚀 ${config.botName} starting...`)
 
-  // Setup error handler PERTAMA di sini bray (biar semua error ke-catch)
   setupErrorHandler()
-
   await loadFeatures()
   setupConnection(client)
-
-  // Setup handlers di sini
   setupGroupHandler(client)
 
+  // [Fix] Listener terpisah: antilink & game — routing inti gak disentuh
   client.on('message', (event) => {
+    void checkAntilink(client, event)
+    void checkGameAnswer(client, event)
     route(client, event).catch((err) => logger.error({ err }, 'Gagal memproses pesan'))
   })
 
