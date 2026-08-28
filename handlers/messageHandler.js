@@ -43,7 +43,6 @@ export async function route(client, event) {
 
   if (config.autoRead) void markRead(client, event)
 
-  // 1) respons richMessage
   const richReply = readRichReply(event.message)
   if (richReply) {
     logger.info(`🖱️  ${who} [${where}] memilih "${richReply.id}"`)
@@ -60,7 +59,6 @@ export async function route(client, event) {
     return
   }
 
-  // 2) diagnostik rich yang gak kebaca
   if (
     event.message?.interactiveResponseMessage ||
     event.message?.buttonsResponseMessage ||
@@ -71,10 +69,8 @@ export async function route(client, event) {
     return
   }
 
-  // 3) log pesan masuk
   logger.info(`💬 ${who} [${where}] ${describeMessage(event.message)}`)
 
-  // 4) routing command multi-prefix
   if (!ctx.body) return
 
   let matchedPrefix = ''
@@ -106,12 +102,12 @@ export async function route(client, event) {
   }
 
   if (feature.owner && !ctx.isOwner) {
-    await ctx.reply('🚫 Fitur ini khusus owner bot.')
+    await ctx.reply('🚫 Fitur ini khusus Owner bot.')
     return
   }
 
   if (feature.admin && !ctx.isAdmin) {
-    await ctx.reply('🚫 Fitur ini khusus owner/admin bot.')
+    await ctx.reply('🚫 Fitur ini khusus Owner/Admin bot.')
     return
   }
 
@@ -136,7 +132,7 @@ export async function route(client, event) {
   ctx.prefix = matchedPrefix
   ctx.command = commandName.toLowerCase()
   ctx.args = args
-  ctx.text = args.join(' ')
+  ctx.text = withoutPrefix.slice(commandName.length).trim()
 
   incrementCommand(ctx.sender)
   logger.info(`⚙️  [CMD] ${matchedPrefix}${commandName} oleh +${ctx.senderNumber}${ctx.role ? ` (${ctx.role})` : ''}`)

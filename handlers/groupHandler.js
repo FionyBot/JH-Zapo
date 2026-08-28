@@ -2,20 +2,21 @@
  * © JamvanHax0r — Fiony Bot
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
- * groupHandler.js — Event grup: welcome & goodbye dengan teks custom.
- *
- * [Fix] Payload event grup zapo: participants bisa string ATAU object —
- * dinormalisasi ke JID biar aman. Ekstraksi multi-bentuk + dedupe.
+ * groupHandler.js — Event grup: welcome & goodbye dengan teks custom + PP.
  */
 import { logger } from '../core/logger.js'
 import { isOn, getSetting } from '../core/groupSettings.js'
 
 const recent = new Map()
 
-/** String langsung pakai; object diambil jid-nya dari field mana pun — fleksibel. */
 function toJid(p) {
   if (typeof p === 'string') return p
-  return p?.jid ?? p?.participantJid ?? p?.id ?? p?.lid ?? null
+  const candidates = [p.jid, p.participantJid, p.participant, p.pnJid, p.phoneJid, p.id, p.lid]
+  return (
+    candidates.find((c) => typeof c === 'string' && c.endsWith('@s.whatsapp.net')) ??
+    candidates.find((c) => typeof c === 'string' && c.includes('@')) ??
+    null
+  )
 }
 
 function extract(event) {
@@ -37,9 +38,44 @@ function extract(event) {
   return { action, groupJid, participants }
 }
 
+async function resolveLids(client, participants, metaParticipants) {
+  const lids = participants.filter((p) => p.endsWith('@lid'))
+  if (!lids.length) return participants
+
+  try {
+    const pns = (metaParticipants ?? [])
+      .map(toJid)
+      .filter((j) => j && j.endsWith('@s.whatsapp.net'))
+    const rows = await client.profile.getLidsByPhoneNumbers(pns.map((j) => j.split('@')[0]))
+    const map = new Map()
+    for (const r of rows) {
+      if (r?.lidJid) map.set(r.lidJid, r.phoneJid ?? r.queriedJid)
+    }
+    return participants.map((p) => map.get(p) ?? p)
+  } catch {
+    return participants
+  }
+}
+
+async function getProfile(client, jid) {
+  const get = async (type) => {
+    try {
+      const pic = await client.profile.getProfilePicture(jid, type)
+      if (pic?.url) {
+        const res = await fetch(pic.url)
+        if (res.ok) return Buffer.from(await res.arrayBuffer())
+      }
+    } catch { /* abaikan, coba varian lain */ }
+    return null
+  }
+
+  const image = await get('image')
+  const preview = await get('preview')
+  return { image: image ?? preview, thumb: preview ?? image }
+}
+
 export function setupGroupHandler(client) {
   async function handleParticipantChange(action, groupJid, participants) {
-    // Dedupe 3 detik (jaga-jaga emitter nerbitin 2 bentuk event untuk meminimalisir error bray)
     const key = `${action}|${groupJid}|${participants.join(',')}`
     const now = Date.now()
     if (recent.has(key) && now - recent.get(key) < 3000) return
@@ -53,7 +89,6 @@ export function setupGroupHandler(client) {
     }
   }
 
-  // Event utama zapo: `group`
   client.on('group', (event) => {
     const { action, groupJid, participants } = extract(event)
     if (!action || !groupJid || !participants.length) {
@@ -64,7 +99,6 @@ export function setupGroupHandler(client) {
     void handleParticipantChange(action, groupJid, participants)
   })
 
-  // Fallback kalau emitter pakai nama spesifik di sini ya bray
   for (const [name, action] of [
     ['group_participant_add', 'add'],
     ['group_participant_remove', 'remove'],
@@ -82,16 +116,20 @@ export function setupGroupHandler(client) {
     })
   }
 
-  logger.info('🔧 Group handler siap (welcome/bye)')
+  logger.info('🔧 Group handler siap (welcome/bye + PP)')
 }
 
-async function sendGreeting(client, groupJid, participants, kind) {
+async function sendGreeting(client, groupJid, rawParticipants, kind) {
   try {
     let groupName = 'grup ini'
+    let metaParticipants = []
     try {
       const meta = await client.group.queryGroupMetadata(groupJid)
       groupName = meta.subject ?? groupName
+      metaParticipants = meta.participants ?? []
     } catch { /* pakai default */ }
+
+    const participants = await resolveLids(client, rawParticipants, metaParticipants)
 
     const mentions = []
     const tags = participants
@@ -111,6 +149,25 @@ async function sendGreeting(client, groupJid, participants, kind) {
     const text = (custom ?? defaultText)
       .replace(/%group/g, groupName)
       .replace(/@user/g, tags)
+
+    const { image, thumb } = await getProfile(client, participants[0])
+    if (image && thumb) {
+      try {
+        const up = await client.message.upload(image, { type: 'image', mediaType: 'image' })
+        await client.message.send(groupJid, {
+          imageMessage: {
+            ...up,
+            mimetype: 'image/jpeg',
+            caption: text,
+            jpegThumbnail: new Uint8Array(thumb),
+            contextInfo: { mentionedJid: mentions }
+          }
+        })
+        return
+      } catch (err) {
+        logger.warn({ err: err.message }, 'Gagal kirim greeting gambar, fallback teks')
+      }
+    }
 
     await client.message.send(groupJid, {
       extendedTextMessage: {
