@@ -2,26 +2,30 @@
  * © JamvanHax0r — Fiony Bot
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
- * tebakkata.js — tebak kata berpetunjuk, 60 detik, bank kata lokal.
- * JSON more bervariasi akan diadd/bikin nanti. 
+ * tebakkata.js — tebak kata berpetunjuk, 60 detik, support clue.
+ * Bank kata besar dan bervariasi dari level mudah → expert.
  */
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
 import { isOn } from '../../core/groupSettings.js'
 import { startGame, hasGame } from '../../handlers/gameHandler.js'
 
-const BANK = [
-  { w: 'kopi', c: 'minuman hitam yang bikin melek' },
-  { w: 'hujan', c: 'turun dari langit, bikin malas keluar' },
-  { w: 'pasar', c: 'tempat ibu beli sayur' },
-  { w: 'sepeda', c: 'dua roda, dikayuh, ramah lingkungan' },
-  { w: 'gunung', c: 'lebih tinggi dari bukit' },
-  { w: 'laptop', c: 'komputer yang bisa dibawa ke mana-mana' },
-  { w: 'pisang', c: 'buah kuning kesukaan monyet' },
-  { w: 'kucing', c: 'hewan berbulu yang suka mengeong' },
-  { w: 'sekolah', c: 'tempat belajar tiap pagi' },
-  { w: 'bintang', c: 'kelip-kelip di langit malam' },
-  { w: 'pantai', c: 'ada pasir dan ombak' },
-  { w: 'jam', c: 'benda yang selalu berdetak' }
-]
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const BANK = JSON.parse(
+  readFileSync(join(__dirname, '../../src/data/kata.json'), 'utf8')
+)
+const LEVELS = Object.keys(BANK)
+
+function pickRandom() {
+  const level = LEVELS[Math.floor(Math.random() * LEVELS.length)]
+  const pool = BANK[level]
+  const pick = pool[Math.floor(Math.random() * pool.length)]
+  return { ...pick, level }
+}
+
+const LEVEL_ICON = { mudah: '🟢', sedang: '🟡', sulit: '🟠', expert: '🔴' }
 
 export default {
   name: 'tebakkata',
@@ -43,17 +47,30 @@ export default {
       return
     }
 
-    const pick = BANK[Math.floor(Math.random() * BANK.length)]
+    const pick = pickRandom()
 
     startGame(ctx.client, ctx.chat, 'tebakkata', {
+      kind: 'word',
       answer: pick.w,
       display: pick.w,
+      clue: pick.c,
+      supportClue: true,
       expiresAt: Date.now() + 60_000
     })
 
+    const level = LEVEL_ICON[pick.level] ?? '🟢'
     await ctx.reply(
-      `🔤 *TEBAK KATA*\n\nPetunjuk: ${pick.c}\n\n` +
-      `Ketik jawabanmu (60 detik). Ketik *nyerah* buat menyerah.`
+`╭─✦「 *TEBAK KATA* 」✦─╮
+│
+│ ${level} Level: *${pick.level.toUpperCase()}*
+│ 📝 Petunjuk:
+│   ${pick.c}
+│
+│ ⏱️  Waktu: 60 detik
+│ 💡 Butuh bantuan? Ketik *.clue*
+│ 🏳️  Menyerah? Ketik *nyerah*
+│
+╰────────────────────✦╯`
     )
   }
 }

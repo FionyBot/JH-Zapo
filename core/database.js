@@ -2,7 +2,7 @@
  * © JamvanHax0r — Fiony Bot
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
- * database.js — Database abstraction
+ * database.js — Database abstraction untuk FionyVerse
  */
 import Database from 'better-sqlite3'
 import fs from 'node:fs'
@@ -22,9 +22,22 @@ db.exec(`
     first_seen INTEGER,
     last_seen INTEGER,
     command_count INTEGER DEFAULT 0,
-    banned INTEGER DEFAULT 0
+    banned INTEGER DEFAULT 0,
+    gold INTEGER DEFAULT 0,
+    xp INTEGER DEFAULT 0,
+    gems INTEGER DEFAULT 0
   )
 `)
+
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN gold INTEGER DEFAULT 0`)
+} catch {}
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN xp INTEGER DEFAULT 0`)
+} catch {}
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN gems INTEGER DEFAULT 0`)
+} catch {}
 
 export function getUser(jid) {
   return db.prepare('SELECT * FROM users WHERE jid = ?').get(jid)
@@ -36,7 +49,7 @@ export function touchUser(jid, name) {
 
   if (!existing) {
     db.prepare(
-      'INSERT INTO users (jid, name, first_seen, last_seen, command_count, banned) VALUES (?, ?, ?, ?, 0, 0)'
+      'INSERT INTO users (jid, name, first_seen, last_seen, command_count, banned, gold, xp, gems) VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0)'
     ).run(jid, name ?? null, now, now)
   } else {
     db.prepare(
@@ -62,4 +75,28 @@ export function topUsers(limit = 10) {
 
 export function totalUsers() {
   return db.prepare('SELECT COUNT(*) AS c FROM users').get().c
+}
+
+/* ---------- Reward System ---------- */
+
+export function getBalance(jid) {
+  touchUser(jid, null)
+  const row = db.prepare('SELECT gold, xp, gems FROM users WHERE jid = ?').get(jid)
+  return { gold: row.gold, xp: row.xp, gems: row.gems }
+}
+
+export function addReward(jid, { gold = 0, xp = 0, gems = 0 } = {}) {
+  touchUser(jid, null)
+  db.prepare(
+    'UPDATE users SET gold = gold + ?, xp = xp + ?, gems = gems + ? WHERE jid = ?'
+  ).run(gold, xp, gems, jid)
+  return getBalance(jid)
+}
+
+export function topByXP(limit = 10) {
+  return db.prepare('SELECT * FROM users ORDER BY xp DESC LIMIT ?').all(limit)
+}
+
+export function topByGold(limit = 10) {
+  return db.prepare('SELECT * FROM users ORDER BY gold DESC LIMIT ?').all(limit)
 }
