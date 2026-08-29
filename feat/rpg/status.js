@@ -6,6 +6,7 @@
  */
 import { createCharacter, getInventory } from '../../core/rpg.js'
 import { ITEM_INDEX, TIER_ICON } from '../../src/rpg/dropTable.js'
+import { restStage, fmtSec } from '../../src/rpg/flavor.js'
 
 export default {
   name: 'status',
@@ -29,8 +30,12 @@ export default {
     const more = inv.length > 15 ? `\n│ … +${inv.length - 15} item lainnya` : ''
     const empty = '│ Satchel-mu masih kosong.\n│ Rimba di luar sana menunggumu — coba .hunt / .forage / .fish.'
 
+    const restLine = char.resting
+      ? `\n│ 🛖 Sedang beristirahat: *${Math.floor(char.restProgress * 100)}%*\n│    ${restStage(char.restProgress)}\n│    ⏳ Sisa ${fmtSec(char.restRemaining)}\n`
+      : ''
+
     await ctx.reply(
-`╭─🧭「 *NUSANTARA WILDS* 」🧭─╮
+`╭─🧭「 *NUSANTARA WILDS* 」🧭─
 │
 │ 👤 ${char.name} — Level ${char.level}
 │ ⭐ XP: ${char.xp}/${char.level * 100}
@@ -39,7 +44,7 @@ export default {
 │
 │ ❤️ HP: ${char.hp}/${char.max_hp}
 │ ⚡ Energi: ${char.energy}/${char.max_energy}
-│ 💪 Stamina: ${char.stamina}/${char.max_stamina}
+│ 💪 Stamina: ${char.stamina}/${char.max_stamina}${restLine}
 │
 │ 🎒 *SATCHEL* (${inv.length} jenis)
 ${lines.length ? lines.join('\n') : empty}${more}

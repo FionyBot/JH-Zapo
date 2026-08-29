@@ -3,12 +3,26 @@
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
  * flavor.js — Narasi bertema Nusantara Wilds (life-simulation tone).
- * Semua respon game ambil dari sini biar gak klise & gak kosongan.
- * Bebas kau kreasikan lagi bray
  */
 
 export function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)]
+}
+
+export function fmtSec(total) {
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  if (m && s) return `${m}m ${s}s`
+  if (m) return `${m}m`
+  return `${s}s`
+}
+
+/** Narasi progress rest, sesuai tahap pemulihan - thanks to Nad buat saran ini. */
+export function restStage(p) {
+  if (p >= 0.75) return 'Aroma teh herbal dari tungku membangunkanmu perlahan. Tubuhmu hampir pulih sepenuhnya.'
+  if (p >= 0.5) return 'Kamu tertidur pulas; dalam mimpi, samar terdengar gemericik sungai di lembah.'
+  if (p >= 0.25) return 'Napasmu mulai teratur. Pegal di pundak berangsur mengendur.'
+  return 'Kamu baru merebahkan diri; api unggun masih berkobar, suara jangkrik mengisi malam.'
 }
 
 export const FLAVOR = {
@@ -20,6 +34,13 @@ export const FLAVOR = {
     '😮‍ Napasmu berat, kakimu gemetar. Tubuhmu menolak diajak masuk ke rimba lagi hari ini.',
     '😮‍💨 Peluh kemarin bahkan belum kering. Kamu butuh istirahat sebelum kembali berpetualang.',
     '😮‍💨 Punggungmu pegal, satchel terasa makin berat. Memaksakan diri hanya akan mencelakakanmu.',
+  ],
+  startRest: [
+    '🛖 Kamu menutup pintu pondok, menyalakan api unggun kecil, dan merebahkan diri di dipan kayu. Rimba bisa menunggu.',
+    '🛖 Kamu menyeduh teh daun herbal, menggantung satchel di paku dinding, dan memejamkan mata. Waktu berjalan pelan di sini.',
+  ],
+  fresh: [
+    '✨ Tubuhmu sudah segar bugar — rimba menunggumu, tak ada yang perlu dipulihkan.',
   ],
   hunting: {
     success: [
@@ -57,9 +78,4 @@ export const FLAVOR = {
       'Kamu menunggu berjam-jam, tapi yang kau dapat hanya gigitan kecil yang lepas di ujung senar.',
     ],
   },
-  rest: [
-    '🛖 Kamu menyalakan api unggun kecil, merebus teh daun herbal, dan memejamkan mata. Hangat menjalar ke seluruh tubuh.',
-    '🛖 Kamu merebahkan diri di pondok kayu, mendengarkan suara jangkrik dan hujan di atap rumbia. Perlahan, tenagamu kembali.',
-    '🛖 Kamu duduk di beranda, memandang kabut turun dari punggung gunung. Pikiranmu tenang, tubuhmu pulih.',
-  ],
 }

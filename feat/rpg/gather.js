@@ -5,12 +5,12 @@
  * gather.js — Aktivitas gathering Nusantara Wilds.
  * [UPDATE BELOW]
  *
- * .hunt / .forage / .fish — energi & stamina terpakai SETIAP percobaan,
- * miss chance 25% biar ada perjuangan, narasi bertema dari flavor.js.
+ * .hunt / .forage / .fish — energi & stamina terpakai tiap percobaan,
+ * miss chance 25%, diblokir selama istirahat.
  */
 import { createCharacter, getCharacter, updateCharacter, addItem, gainXp } from '../../core/rpg.js'
 import { rollDrop, TIER_ICON } from '../../src/rpg/dropTable.js'
-import { FLAVOR, pick } from '../../src/rpg/flavor.js'
+import { FLAVOR, pick, fmtSec } from '../../src/rpg/flavor.js'
 
 const ACTIVITY = {
   hunt: { key: 'hunting', icon: '🏹', label: 'BERBURU', energy: 20, stamina: 15 },
@@ -32,6 +32,14 @@ export default {
     const existed = getCharacter(ctx.sender)
     const char = createCharacter(ctx.sender, ctx.pushName)
 
+    if (char.resting) {
+      await ctx.reply(
+        `🛖 Kamu sedang beristirahat — tubuhmu butuh waktu, jangan dipaksa.\n` +
+        `⏳ Sisa waktu: ${fmtSec(char.restRemaining)} (${Math.floor(char.restProgress * 100)}%)`
+      )
+      return
+    }
+
     if (char.energy < act.energy || char.stamina < act.stamina) {
       await ctx.reply(
         `${pick(FLAVOR.tired)}\n\n` +
@@ -42,7 +50,6 @@ export default {
       return
     }
 
-    // Energi & stamina terpakai di SETIAP percobaan — berhasil atau tidak
     const after = updateCharacter(ctx.sender, {
       energy: Math.max(0, char.energy - act.energy),
       stamina: Math.max(0, char.stamina - act.stamina)
