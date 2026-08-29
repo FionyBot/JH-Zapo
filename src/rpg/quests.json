@@ -1,0 +1,50 @@
+{
+  "daily": [
+    { "id": "d_hunt_3", "title": "Jejak di Rimba", "desc": "Rimba memanggil — berburulah 3 kali hari ini.", "metric": "gather:hunting", "target": 3, "reward": { "gold": 20, "xp": 10, "gems": 0 } },
+    { "id": "d_fish_3", "title": "Umpan Pertama", "desc": "Sungai tenang menunggu kailmu. Memancinglah 3 kali.", "metric": "gather:fishing", "target": 3, "reward": { "gold": 20, "xp": 10, "gems": 0 } },
+    { "id": "d_forage_3", "title": "Keranjang Hijau", "desc": "Petik 3 kali apa yang rimba tawarkan hari ini.", "metric": "gather:foraging", "target": 3, "reward": { "gold": 20, "xp": 10, "gems": 0 } },
+    { "id": "d_any_5", "title": "Langkah Pagi", "desc": "Kumpulkan 5 hasil apa pun sebelum senja.", "metric": "gather:any", "target": 5, "reward": { "gold": 25, "xp": 12, "gems": 0 } },
+    { "id": "d_any_8", "title": "Hari yang Rajin", "desc": "8 kali mengumpulkan — desa akan membicarakan rajinmu.", "metric": "gather:any", "target": 8, "reward": { "gold": 35, "xp": 18, "gems": 0 } },
+    { "id": "d_hunt_5", "title": "Pemburu Setia", "desc": "5 perburuan hari ini; asah panahmu baik-baik.", "metric": "gather:hunting", "target": 5, "reward": { "gold": 30, "xp": 15, "gems": 0 } },
+    { "id": "d_fish_5", "title": "Nelayan Senja", "desc": "5 kali melempar kail; biarkan sungai yang memilih.", "metric": "gather:fishing", "target": 5, "reward": { "gold": 30, "xp": 15, "gems": 0 } },
+    { "id": "d_forage_5", "title": "Peramu Handal", "desc": "5 kali meramu; kenali daun demi daun.", "metric": "gather:foraging", "target": 5, "reward": { "gold": 30, "xp": 15, "gems": 0 } },
+    { "id": "d_unc_2", "title": "Yang Tak Biasa", "desc": "Temukan 2 hasil tier UNCOMMON hari ini.", "metric": "tier:uncommon", "target": 2, "reward": { "gold": 40, "xp": 20, "gems": 0 } },
+    { "id": "d_rare_1", "title": "Kilau Langka", "desc": "Bawa pulang 1 hasil tier RARE.", "metric": "tier:rare", "target": 1, "reward": { "gold": 60, "xp": 30, "gems": 1 } },
+    { "id": "d_berry_3", "title": "Manis di Semak", "desc": "Petik 3 Buah Beri untuk kue tetua desa.", "metric": "item:berry", "target": 3, "reward": { "gold": 25, "xp": 12, "gems": 0 } },
+    { "id": "d_tilapia_3", "title": "Lauk Malam", "desc": "Tangkap 3 Ikan Nila untuk dapur umum.", "metric": "item:tilapia", "target": 3, "reward": { "gold": 25, "xp": 12, "gems": 0 } },
+    { "id": "d_mush_3", "title": "Jamur Usai Hujan", "desc": "Kumpulkan 3 Jamur Liar yang segar.", "metric": "item:wild_mushroom", "target": 3, "reward": { "gold": 25, "xp": 12, "gems": 0 } },
+    { "id": "d_any_10", "title": "Sepuluh Langkah", "desc": "10 hasil dalam sehari — kaki kuat, hati tenang.", "metric": "gather:any", "target": 10, "reward": { "gold": 45, "xp": 22, "gems": 0 } }
+  ],
+  "weekly": [
+    { "id": "w_any_25", "title": "Pekan Pengumpul", "desc": "25 hasil dalam sepekan — ritme hidup seorang petualang.", "metric": "gather:any", "target": 25, "reward": { "gold": 100, "xp": 50, "gems": 1 } },
+    { "id": "w_hunt_12", "title": "Panah & Jejak", "desc": "12 perburuan minggu ini; rimba mengenalmu sekarang.", "metric": "gather:hunting", "target": 12, "reward": { "gold": 90, "xp": 45, "gems": 1 } },
+    { "id": "w_fish_12", "title": "Arus Semana", "desc": "12 kali memancing; sabar adalah umpan terbaik.", "metric": "gather:fishing", "target": 12, "reward": { "gold": 90, "xp": 45, "gems": 1 } },
+    { "id": "w_forage_12", "title": "Daun & Akar", "desc": "12 kali meramu; hutan membuka rahasianya pelan-pelan.", "metric": "gather:foraging", "target": 12, "reward": { "gold": 90, "xp": 45, "gems": 1 } },
+    { "id": "w_rare_3", "title": "Tiga Kilau", "desc": "Bawa pulang 3 hasil tier RARE minggu ini.", "metric": "tier:rare", "target": 3, "reward": { "gold": 150, "xp": 70, "gems": 2 } },
+    { "id": "w_epic_1", "title": "Sentuhan Epik", "desc": "Satu hasil tier EPIC — cukup untuk membuat desa heboh.", "metric": "tier:epic", "target": 1, "reward": { "gold": 200, "xp": 90, "gems": 3 } },
+    { "id": "w_unc_6", "title": "Separuh Lusin", "desc": "6 hasil tier UNCOMMON; yang biasa pun berarti.", "metric": "tier:uncommon", "target": 6, "reward": { "gold": 120, "xp": 55, "gems": 1 } },
+    { "id": "w_herb_8", "title": "Apotek Rimba", "desc": "Kumpulkan 8 Daun Herbal untuk tabib desa.", "metric": "item:herb_leaf", "target": 8, "reward": { "gold": 110, "xp": 50, "gems": 1 } },
+    { "id": "w_catfish_6", "title": "Kumis Sungai", "desc": "6 Ikan Lele; asap pengasapan sudah mengebul.", "metric": "item:catfish", "target": 6, "reward": { "gold": 100, "xp": 48, "gems": 1 } },
+    { "id": "w_orchid_3", "title": "Mahkota Kelopak", "desc": "3 bunga Anggrek untuk hiasan balai desa.", "metric": "item:orchid", "target": 3, "reward": { "gold": 130, "xp": 60, "gems": 2 } }
+  ],
+  "monthly": [
+    { "id": "m_any_100", "title": "Legenda Pengumpul", "desc": "100 hasil dalam sebulan; namamu mulai disebut-sebut.", "metric": "gather:any", "target": 100, "reward": { "gold": 500, "xp": 250, "gems": 5 } },
+    { "id": "m_leg_1", "title": "Mitos yang Nyata", "desc": "Bawa pulang 1 hasil tier LEGENDARY. Bulan ini.", "metric": "tier:legendary", "target": 1, "reward": { "gold": 1000, "xp": 500, "gems": 10 } },
+    { "id": "m_epic_4", "title": "Empat Keajaiban", "desc": "4 hasil tier EPIC dalam sebulan.", "metric": "tier:epic", "target": 4, "reward": { "gold": 600, "xp": 300, "gems": 6 } },
+    { "id": "m_rare_10", "title": "Sepuluh Kilau", "desc": "10 hasil tier RARE; kilau yang tak bisa disembunyikan.", "metric": "tier:rare", "target": 10, "reward": { "gold": 450, "xp": 220, "gems": 4 } },
+    { "id": "m_hunt_40", "title": "Panah Tak Pernah Tidur", "desc": "40 perburuan dalam sebulan.", "metric": "gather:hunting", "target": 40, "reward": { "gold": 400, "xp": 200, "gems": 4 } },
+    { "id": "m_fish_40", "title": "Raja Sungai", "desc": "40 tangkapan dalam sebulan; sungai hafal wajahmu.", "metric": "gather:fishing", "target": 40, "reward": { "gold": 400, "xp": 200, "gems": 4 } },
+    { "id": "m_forage_40", "title": "Hutan yang Murah Hati", "desc": "40 kali meramu dalam sebulan.", "metric": "gather:foraging", "target": 40, "reward": { "gold": 400, "xp": 200, "gems": 4 } },
+    { "id": "m_arowana_3", "title": "Sisik Emas Sungai", "desc": "3 Ikan Arwana; permata yang berenang.", "metric": "item:arowana", "target": 3, "reward": { "gold": 700, "xp": 350, "gems": 8 } }
+  ],
+  "story": [
+    { "id": "s1", "title": "Panggilan Tetua", "desc": "Tetua desa ingin melihat kesungguhanmu. Kumpulkan 10 hasil apa pun.", "metric": "gather:any", "target": 10, "reward": { "gold": 50, "xp": 30, "gems": 1 } },
+    { "id": "s2", "title": "Manis untuk Tetua", "desc": "Istri tetua menginginkan kue beri. Petik 5 Buah Beri.", "metric": "item:berry", "target": 5, "reward": { "gold": 60, "xp": 35, "gems": 1 } },
+    { "id": "s3", "title": "Lauk dari Sungai", "desc": "Dapur umum kekurangan lauk. Tangkap 5 Ikan Nila.", "metric": "item:tilapia", "target": 5, "reward": { "gold": 70, "xp": 40, "gems": 1 } },
+    { "id": "s4", "title": "Ramuan Penyembuh", "desc": "Tabib butuh 5 Daun Herbal untuk musim sakit ini.", "metric": "item:herb_leaf", "target": 5, "reward": { "gold": 80, "xp": 45, "gems": 2 } },
+    { "id": "s5", "title": "Bukti Sang Pemburu", "desc": "Para pemburu meragukanmu. Bawa 2 hasil tier RARE.", "metric": "tier:rare", "target": 2, "reward": { "gold": 120, "xp": 70, "gems": 2 } },
+    { "id": "s6", "title": "Sayap dari Langit", "desc": "Tetua meminta Bulu Elang untuk upacara adat.", "metric": "item:eagle_feather", "target": 1, "reward": { "gold": 200, "xp": 100, "gems": 3 } },
+    { "id": "s7", "title": "Bisikan Sisik", "desc": "Ada yang ganjil di hulu. Bawa 2 hasil tier EPIC sebagai bukti.", "metric": "tier:epic", "target": 2, "reward": { "gold": 300, "xp": 150, "gems": 4 } },
+    { "id": "s8", "title": "Jantung Rimba", "desc": "Akhir dari semuanya: sentuh yang mitos. Bawa 1 hasil LEGENDARY.", "metric": "tier:legendary", "target": 1, "reward": { "gold": 1000, "xp": 500, "gems": 10 } }
+  ]
+}

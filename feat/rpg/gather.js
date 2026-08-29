@@ -3,14 +3,13 @@
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
  * gather.js — Aktivitas gathering Nusantara Wilds.
- * [UPDATE BELOW]
- *
  * .hunt / .forage / .fish — energi & stamina terpakai tiap percobaan,
- * miss chance 25%, diblokir selama istirahat.
+ * miss chance 25%, diblokir selama istirahat, progress quest otomatis.
  */
 import { createCharacter, getCharacter, updateCharacter, addItem, gainXp } from '../../core/rpg.js'
 import { rollDrop, TIER_ICON } from '../../src/rpg/dropTable.js'
 import { FLAVOR, pick, fmtSec } from '../../src/rpg/flavor.js'
+import { progressQuests } from '../../core/questEngine.js'
 
 const ACTIVITY = {
   hunt: { key: 'hunting', icon: '🏹', label: 'BERBURU', energy: 20, stamina: 15 },
@@ -72,6 +71,14 @@ export default {
     addItem(ctx.sender, drop.id, 1)
     const { leveledUp } = gainXp(ctx.sender, XP_GAIN[drop.tier] ?? 2)
 
+    // Progress quest yang cocok
+    const completions = progressQuests(ctx.sender, [
+      'gather:any',
+      `gather:${act.key}`,
+      `item:${drop.id}`,
+      `tier:${drop.tier}`
+    ])
+
     let text =
       pick(FLAVOR[act.key].success).replace('{item}', `*${drop.name}*`) +
       `\n\n╭─${act.icon}「 *${act.label}* 」${act.icon}─╮\n` +
@@ -87,6 +94,12 @@ export default {
     if (!existed) text = `${pick(FLAVOR.welcome)}\n\n${text}`
     if (leveledUp) {
       text += `\n\n🔥 *TUBUHMU KIAN TERLATIH!* Naik ke level ${after.level} — batas stats meningkat & pulih penuh.`
+    }
+    for (const c of completions) {
+      text +=
+        `\n\n📜 *MISI SELESAI — ${c.title}!*\n` +
+        `🎁 +${c.reward.gold}G • +${c.reward.xp}XP • +${c.reward.gems}💎\n` +
+        `💰 Saldo: ${c.balance.gold}G / ${c.balance.xp}XP / ${c.balance.gems}💎`
     }
 
     await ctx.reply(text)

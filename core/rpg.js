@@ -3,16 +3,10 @@
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
  * rpg.js — Character management Nusantara Wilds + maintenance DB.
- * [UPDATE AND FIX BELOW]
+ * [UPDATE BELOW]
  *
- * Rest time-based (lazy resolve):
- * - rest_started_at + rest_duration + base stats disimpan saat .rest
- * - Stats pulih interpolasi linear, dihitung saat dibaca (tanpa timer)
- * - Aman restart bot, gak nyampah DB/memory
- * [BONUS]
- *
- * Penangkal DB bengkak: row inventory kosong dihapus, quest lama dibersihin,
- * WAL checkpoint + optimize (start & tiap 6 jam).
+ * Rest time-based (lazy resolve), penangkal DB bengkak,
+ * + getCompletedQuestIds buat urutan story quest.
  */
 import Database from 'better-sqlite3'
 import fs from 'node:fs'
@@ -48,7 +42,6 @@ db.exec(`
   )
 `)
 
-// Migration kolom rest (buat karakter lama)
 for (const col of [
   'rest_started_at', 'rest_duration',
   'rest_base_energy', 'rest_base_stamina', 'rest_base_hp'
@@ -96,7 +89,6 @@ function write(jid, updates) {
   return readRaw(jid)
 }
 
-/** Hitung pemulihan rest secara lazy; tulis ke DB hanya saat selesai. */
 function resolveRest(raw) {
   if (!raw) return raw
   if (!raw.rest_started_at) {
@@ -151,7 +143,6 @@ export function updateCharacter(jid, updates) {
   return resolveRest(write(jid, updates))
 }
 
-/** Mulai rest. Durasi = seberapa habisnya stats (30s – 600s). */
 export function startRest(jid) {
   const c = getCharacter(jid)
   const missing =
@@ -193,7 +184,6 @@ export function gainXp(jid, amount) {
     updates.hp = max_hp
     updates.energy = max_energy
     updates.stamina = max_stamina
-    // level up batalin rest (stats pulih penuh)
     updates.rest_started_at = 0
     updates.rest_duration = 0
   }
@@ -225,9 +215,8 @@ export function addItem(jid, itemId, amount = 1) {
   ).get(jid, itemId)
 
   if (existing) {
-    db.prepare(
-      'UPDATE rpg_inventory SET amount = amount + ? WHERE jid = ? AND item_id = ?'
-    ).run(amount, jid, itemId)
+    db.prepare('UPDATE rpg_inventory SET amount = amount + ? WHERE jid = ? AND item_id = ?')
+      .run(amount, jid, itemId)
   } else {
     db.prepare('INSERT INTO rpg_inventory (jid, item_id, amount) VALUES (?, ?, ?)')
       .run(jid, itemId, amount)
@@ -261,6 +250,12 @@ export function addQuest(jid, questType, questId, target) {
 
 export function getActiveQuests(jid) {
   return db.prepare("SELECT * FROM rpg_quests WHERE jid = ? AND status = 'active'").all(jid)
+}
+
+export function getCompletedQuestIds(jid) {
+  return db.prepare(
+    "SELECT quest_id FROM rpg_quests WHERE jid = ? AND status = 'completed'"
+  ).all(jid).map((r) => r.quest_id)
 }
 
 export function updateQuestProgress(jid, questId, increment = 1) {
