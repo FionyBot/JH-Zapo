@@ -1,0 +1,77 @@
+{
+  "hunting": {
+    "common": [
+      { "id": "rabbit_meat", "name": "Daging Kelinci", "value": 5, "energy_restore": 10 },
+      { "id": "bird_feather", "name": "Bulu Burung", "value": 3, "energy_restore": 0 },
+      { "id": "small_hide", "name": "Kulit Kecil", "value": 8, "energy_restore": 0 }
+    ],
+    "uncommon": [
+      { "id": "deer_antler", "name": "Tanduk Rusa", "value": 25, "energy_restore": 0 },
+      { "id": "wild_boar_tusk", "name": "Gading Babi Hutan", "value": 30, "energy_restore": 0 },
+      { "id": "fox_tail", "name": "Ekor Rubah", "value": 35, "energy_restore": 0 }
+    ],
+    "rare": [
+      { "id": "tiger_skin", "name": "Kulit Harimau", "value": 150, "energy_restore": 0 },
+      { "id": "eagle_feather", "name": "Bulu Elang", "value": 120, "energy_restore": 0 },
+      { "id": "bear_claw", "name": "Cakar Beruang", "value": 180, "energy_restore": 0 }
+    ],
+    "epic": [
+      { "id": "rhino_horn", "name": "Cula Badak", "value": 500, "energy_restore": 0 },
+      { "id": "orangutan_fur", "name": "Bulu Orangutan", "value": 450, "energy_restore": 0 }
+    ],
+    "legendary": [
+      { "id": "dragon_scale", "name": "Sisik Naga", "value": 2000, "energy_restore": 50 },
+      { "id": "phoenix_feather", "name": "Bulu Phoenix", "value": 2500, "energy_restore": 100 }
+    ]
+  },
+  "foraging": {
+    "common": [
+      { "id": "wild_mushroom", "name": "Jamur Liar", "value": 3, "energy_restore": 5, "hp_restore": 0 },
+      { "id": "berry", "name": "Buah Beri", "value": 2, "energy_restore": 8, "hp_restore": 5 },
+      { "id": "herb_leaf", "name": "Daun Herbal", "value": 4, "energy_restore": 0, "hp_restore": 10 }
+    ],
+    "uncommon": [
+      { "id": "orchid", "name": "Anggrek", "value": 20, "energy_restore": 0, "hp_restore": 0 },
+      { "id": "ginseng", "name": "Ginseng", "value": 35, "energy_restore": 15, "hp_restore": 20 },
+      { "id": "wild_honey", "name": "Madu Liar", "value": 25, "energy_restore": 20, "hp_restore": 10 }
+    ],
+    "rare": [
+      { "id": "rafflesia", "name": "Bunga Raflesia", "value": 200, "energy_restore": 0, "hp_restore": 0 },
+      { "id": "black_orchid", "name": "Anggrek Hitam", "value": 180, "energy_restore": 0, "hp_restore": 0 },
+      { "id": "golden_root", "name": "Akar Emas", "value": 250, "energy_restore": 30, "hp_restore": 40 }
+    ],
+    "epic": [
+      { "id": "dragon_fruit_rare", "name": "Buah Naga Langka", "value": 600, "energy_restore": 50, "hp_restore": 60 },
+      { "id": "ancient_bark", "name": "Kulit Pohon Kuno", "value": 550, "energy_restore": 0, "hp_restore": 0 }
+    ],
+    "legendary": [
+      { "id": "divine_fruit", "name": "Buah Dewa", "value": 3000, "energy_restore": 100, "hp_restore": 100 },
+      { "id": "world_tree_leaf", "name": "Daun Pohon Dunia", "value": 3500, "energy_restore": 80, "hp_restore": 80 }
+    ]
+  },
+  "fishing": {
+    "common": [
+      { "id": "tilapia", "name": "Ikan Nila", "value": 5, "energy_restore": 8 },
+      { "id": "catfish", "name": "Ikan Lele", "value": 6, "energy_restore": 10 },
+      { "id": "carp", "name": "Ikan Mas", "value": 7, "energy_restore": 12 }
+    ],
+    "uncommon": [
+      { "id": "grouper", "name": "Ikan Kerapu", "value": 30, "energy_restore": 15 },
+      { "id": "snapper", "name": "Ikan Kakap", "value": 35, "energy_restore": 18 },
+      { "id": "mackerel", "name": "Ikan Tenggiri", "value": 40, "energy_restore": 20 }
+    ],
+    "rare": [
+      { "id": "arowana", "name": "Ikan Arwana", "value": 200, "energy_restore": 30 },
+      { "id": "koi", "name": "Ikan Koi", "value": 180, "energy_restore": 25 },
+      { "id": "swordfish", "name": "Ikan Todak", "value": 220, "energy_restore": 35 }
+    ],
+    "epic": [
+      { "id": "dragon_fish", "name": "Ikan Naga", "value": 800, "energy_restore": 60 },
+      { "id": "golden_koi", "name": "Koi Emas", "value": 750, "energy_restore": 55 }
+    ],
+    "legendary": [
+      { "id": "divine_fish", "name": "Ikan Dewa", "value": 4000, "energy_restore": 100 },
+      { "id": "leviathan_scale", "name": "Sisik Leviathan", "value": 5000, "energy_restore": 120 }
+    ]
+  }
+}

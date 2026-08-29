@@ -3,7 +3,7 @@
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
  * app.js — FionyVerse entry point.
- * Jantung file! Hati2 dlm mengubah file ini!
+ * Jantung bot! Hati2 dlm mengubah file ini!
  */
 import { createStore, WaClient } from 'zapo-js'
 import { createSqliteStore } from '@zapo-js/store-sqlite'
@@ -21,6 +21,7 @@ import { setupErrorHandler } from './handlers/errorHandler.js'
 import { checkAntilink } from './handlers/antilinkHandler.js'
 import { checkGameAnswer } from './handlers/gameHandler.js'
 import { normalizeNumber } from './core/staff.js'
+import { maintenance } from './core/rpg.js'
 
 function ask(question) {
   const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -82,7 +83,10 @@ async function main() {
   setupConnection(client)
   setupGroupHandler(client)
 
-  // [Fix] Listener terpisah: antilink & game — routing inti gak disentuh
+  // Maintenance DB RPG: saat start + tiap 6 jam — JH x Fiony
+  maintenance()
+  setInterval(maintenance, 6 * 60 * 60 * 1000)
+
   client.on('message', (event) => {
     void checkAntilink(client, event)
     void checkGameAnswer(client, event)
