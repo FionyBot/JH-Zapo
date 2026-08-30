@@ -15,6 +15,7 @@ import { setupQR } from './auth/qrHandler.js'
 import { setupPairing } from './auth/pairingHandler.js'
 import { setupConnection, markShutdown } from './auth/connectionManager.js'
 import { loadFeatures } from './feat/loader.js'
+import { setupHotReload, stopHotReload } from './core/hotReload.js'
 import { route } from './handlers/messageHandler.js'
 import { setupGroupHandler } from './handlers/groupHandler.js'
 import { setupErrorHandler } from './handlers/errorHandler.js'
@@ -80,6 +81,7 @@ async function main() {
 
   setupErrorHandler()
   await loadFeatures()
+  setupHotReload(client)
   setupConnection(client)
   setupGroupHandler(client)
 
@@ -133,6 +135,7 @@ process.on('SIGINT', async () => {
   logger.info('🛑 Mematikan bot...')
   markShutdown()
   try { clientLogger.level = 'error' } catch {}
+  await stopHotReload().catch(() => {})
   await client.disconnect().catch(() => {})
   process.exit(0)
 })

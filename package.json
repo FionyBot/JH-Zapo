@@ -11,6 +11,7 @@
   "dependencies": {
     "@zapo-js/store-sqlite": "latest",
     "better-sqlite3": "latest",
+    "chokidar": "^5.0.0",
     "node-webpmux": "^3.2.1",
     "pino": "^9.4.0",
     "pino-pretty": "^13.0.0",

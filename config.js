@@ -24,11 +24,11 @@ export default {
     { number: '6289698133663', role: 'admin', label: 'XN • Staff Admin' },
   ],
 
-  // Fitur grup yang butuh on/off (permission admin/staff)
+  // Fitur grup yang butuh on/off (permission admin/staff) — JH x FIONY
   toggleable: ['welcome', 'bye', 'antilink', 'game'],
 
-  // BLACKLIST domain antilink (default; bisa di-override per grup).
-  // Selain daftar ini = boleh. Yang di daftar = dihapus.
+  // BLACKLIST domain antilink (default; bisa di-override per grup) — JH x FIONY.
+  // Selain daftar ini = boleh. Yang di daftar = dihapus — JH x FIONY.
   antilink: {
     defaultBlacklist: 'wa.me,chat.whatsapp.com,t.me,telegram.me',
   },
@@ -50,6 +50,14 @@ export default {
 
   autoRead: true,
   typingPresence: true,
+
+  // Hot Reload — auto reload command di feat/ tiap ada file baru/edit/hapus.
+  // Gak perlu restart bot/server, gak perlu ketik .reload manual lagi.
+  hotReload: {
+    enabled: true,
+    debounceMs: 400,   // jeda nunggu (ms) biar gak reload berkali-kali pas nyimpen beruntun
+    notifyOwner: true, // kirim WA ke owner tiap kali hot reload kejadian
+  },
 
   messages: {
     wait: '⏳ Tunggu sebentar ya, Kak...',
