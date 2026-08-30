@@ -5,7 +5,8 @@
  */
 import config from '../../config.js'
 import { listFeatures } from '../loader.js'
-import { totalUsers } from '../../core/database.js'
+import { totalUsers, getBalance } from '../../core/database.js'
+import { getCharacter } from '../../core/rpg.js'
 
 const CATEGORY = {
   general: '📌 GENERAL',
@@ -14,7 +15,9 @@ const CATEGORY = {
   tools: '🛠️ TOOLS',
   media: '🎨 MEDIA',
   ai: '🤖 AI',
-  group: '👥 GROUP'
+  group: '👥 GROUP',
+  game: '🎮 GAME',
+  rpg: '🧭 RPG'
 }
 
 function fmtUptime(ms) {
@@ -45,11 +48,20 @@ export default {
     const p = config.mainPrefix
     const lines = []
 
+    // [UPDATE] Elemen RPG biar "terkoneksi"
+    const char = getCharacter(ctx.sender)
+    const bal = getBalance(ctx.sender)
+
     lines.push(`╭━━━「 *${config.botName}* 」`)
     lines.push(`│ 👋 Hai, ${ctx.pushName || 'user'}!`)
     lines.push(`│ 🔖 Role: ${ctx.isStaff ? `${ctx.role.toUpperCase()}${ctx.staffLabel ? ` • ${ctx.staffLabel}` : ''}` : 'User'}`)
     lines.push(`│ 🧩 ${features.length} fitur • 👥 ${totalUsers()} user`)
     lines.push(`│ ⏱ Aktif ${fmtUptime(process.uptime() * 1000)}`)
+    lines.push(
+      char
+        ? `│ 🧭 NW: Lv.${char.level} • 💰 ${bal.gold}G • 💎 ${bal.gems}`
+        : `│ 🧭 NW: belum mulai — coba ${p}hunt`
+    )
     lines.push(`╰━━━━━━━━━━━━━━`)
     lines.push('')
 
