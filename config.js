@@ -24,11 +24,11 @@ export default {
     { number: '6289698133663', role: 'admin', label: 'XN • Staff Admin' },
   ],
 
-  // Fitur grup yang butuh on/off (permission admin/staff) — JH x FIONY
+  // Fitur grup yang butuh on/off (permission admin/staff)
   toggleable: ['welcome', 'bye', 'antilink', 'game'],
 
-  // BLACKLIST domain antilink (default; bisa di-override per grup) — JH x FIONY.
-  // Selain daftar ini = boleh. Yang di daftar = dihapus — JH x FIONY.
+  // BLACKLIST domain antilink (default; bisa di-override per grup).
+  // Selain daftar ini = boleh. Yang di daftar = dihapus.
   antilink: {
     defaultBlacklist: 'wa.me,chat.whatsapp.com,t.me,telegram.me',
   },
@@ -57,6 +57,14 @@ export default {
     enabled: true,
     debounceMs: 400,   // jeda nunggu (ms) biar gak reload berkali-kali pas nyimpen beruntun
     notifyOwner: true, // kirim WA ke owner tiap kali hot reload kejadian
+  },
+
+  // React Channel — auto-react postingan baru di channel khusus bot,
+  // + command .rch buat react manual ke postingan channel manapun.
+  reactChannel: {
+    enabled: true,
+    dedicatedChannelUrl: 'https://whatsapp.com/channel/0029Vb5blhMEawdx2QFALZ1D',
+    emojis: ['🔥', '❤️', '😍', '👍', '😂', '🥳', '💯', '✨'],
   },
 
   messages: {

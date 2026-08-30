@@ -16,6 +16,7 @@ import { setupPairing } from './auth/pairingHandler.js'
 import { setupConnection, markShutdown } from './auth/connectionManager.js'
 import { loadFeatures } from './feat/loader.js'
 import { setupHotReload, stopHotReload } from './core/hotReload.js'
+import { setupReactChannel } from './core/reactChannel.js'
 import { route } from './handlers/messageHandler.js'
 import { setupGroupHandler } from './handlers/groupHandler.js'
 import { setupErrorHandler } from './handlers/errorHandler.js'
@@ -82,6 +83,7 @@ async function main() {
   setupErrorHandler()
   await loadFeatures()
   setupHotReload(client)
+  setupReactChannel(client)
   setupConnection(client)
   setupGroupHandler(client)
 

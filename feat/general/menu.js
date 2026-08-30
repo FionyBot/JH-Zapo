@@ -69,7 +69,8 @@ export default {
       lines.push(`┌─「 ${CATEGORY[tag] || `📦 ${tag.toUpperCase()}`} 」`)
       for (const f of list) {
         const lock = f.owner ? ' 🔒' : f.admin ? ' 🛡️' : ''
-        lines.push(`│ • ${p}${f.name}${lock} — ${f.description || ''}`)
+        const aliases = (f.aliases ?? []).map((a) => `${p}${a}`).join(' / ')
+        lines.push(`│ • *${p}${f.name}${aliases ? ` / ${aliases}` : ''}${lock}* — _${f.description || ''}_`)
       }
       lines.push(`└──────────`)
       lines.push('')
