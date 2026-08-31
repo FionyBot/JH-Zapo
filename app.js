@@ -3,7 +3,7 @@
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
  * app.js — FionyVerse entry point.
- * Jantung bot! Hati2 dlm mengubah file ini!
+ * Jantung bot! Hati2 dlm mengubah ini!
  */
 import { createStore, WaClient } from 'zapo-js'
 import { createSqliteStore } from '@zapo-js/store-sqlite'
@@ -15,15 +15,89 @@ import { setupQR } from './auth/qrHandler.js'
 import { setupPairing } from './auth/pairingHandler.js'
 import { setupConnection, markShutdown } from './auth/connectionManager.js'
 import { loadFeatures } from './feat/loader.js'
-import { setupHotReload, stopHotReload } from './core/hotReload.js'
-import { setupReactChannel } from './core/reactChannel.js'
 import { route } from './handlers/messageHandler.js'
 import { setupGroupHandler } from './handlers/groupHandler.js'
 import { setupErrorHandler } from './handlers/errorHandler.js'
 import { checkAntilink } from './handlers/antilinkHandler.js'
 import { checkGameAnswer } from './handlers/gameHandler.js'
-import { normalizeNumber } from './core/staff.js'
+import { normalizeNumber, getStaffEntry } from './core/staff.js'
 import { maintenance } from './core/rpg.js'
+import { runEval } from './core/evalRunner.js'
+import { runExec } from './core/execRunner.js'
+
+const EVAL_PREFIX = /^=?> /
+const EXEC_PREFIX = /^\$/
+
+/** [UPDATE] React pakai typed send resmi zapo: { type: 'reaction', emoji, target }. */
+async function reactTo(client, event, emoji) {
+  try {
+    await client.message.send(event.key.remoteJid, {
+      type: 'reaction',
+      emoji,
+      target: event
+    })
+  } catch { /* react gagal = gak fatal */ }
+}
+
+function setupOwnerMetaHandler(client) {
+  client.on('message', async (event) => {
+    try {
+      if (event.key.fromMe) return
+
+      const body =
+        event.message?.conversation ??
+        event.message?.extendedTextMessage?.text ??
+        ''
+      if (!body) return
+      if (!EVAL_PREFIX.test(body) && !EXEC_PREFIX.test(body)) return
+
+      const primary = event.key.participant ?? event.key.remoteJid
+      const alt = event.key.participantAlt ?? event.key.remoteJidAlt
+      const pnJid = primary?.endsWith('@lid') ? (alt ?? primary) : primary
+      const senderNumber = (pnJid ?? '').split('@')[0].split(':')[0]
+
+      const staffEntry = getStaffEntry(senderNumber)
+      if (staffEntry?.role !== 'owner') {
+        logger.warn(`meta: ditolak — +${senderNumber} bukan owner`)
+        return
+      }
+
+      const remoteJid = event.key.remoteJid
+      const ctx = {
+        client,
+        chat: remoteJid,
+        sender: primary,
+        senderNumber,
+        pushName: event.pushName ?? senderNumber,
+        react: (emoji) => reactTo(client, event, emoji),
+        reply: async (text) => {
+          try { await client.message.send(remoteJid, String(text)) } catch {}
+        }
+      }
+
+      if (EXEC_PREFIX.test(body)) {
+        await ctx.react('⏱️')
+        const command = body.replace(EXEC_PREFIX, '').trim()
+        if (!command) return await ctx.reply('⚠️ Command kosong.')
+        const result = await runExec(command)
+        let response = ''
+        if (result.stdout) response += `📤 STDOUT:\n${result.stdout}\n`
+        if (result.stderr) response += `📥 STDERR:\n${result.stderr}\n`
+        if (result.error && !result.stdout && !result.stderr) response += `❌ Error: ${result.error.message}`
+        await ctx.reply(response || '(no output)')
+        return
+      }
+
+      await ctx.react('⏱️')
+      const asReturn = body.startsWith('=')
+      const code = body.replace(EVAL_PREFIX, '')
+      const m = { ...event, reply: ctx.reply, react: ctx.react, exp: 0 }
+      await runEval(code, { m, conn: client, args: code.split(/\s+/), groupMetadata: null }, asReturn)
+    } catch (err) {
+      logger.warn({ err: err.message }, 'meta: handler gagal')
+    }
+  })
+}
 
 function ask(question) {
   const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -82,16 +156,23 @@ async function main() {
 
   setupErrorHandler()
   await loadFeatures()
-  setupHotReload(client)
-  setupReactChannel(client)
   setupConnection(client)
   setupGroupHandler(client)
 
-  // Maintenance DB RPG: saat start + tiap 6 jam — JH x Fiony
   maintenance()
   setInterval(maintenance, 6 * 60 * 60 * 1000)
 
+  setupOwnerMetaHandler(client)
+
   client.on('message', (event) => {
+    const body =
+      event.message?.conversation ??
+      event.message?.extendedTextMessage?.text ??
+      ''
+    if (body && config.prefixes.some((p) => body.startsWith(p) && body.length > p.length)) {
+      void reactTo(client, event, '⏱️')
+    }
+
     void checkAntilink(client, event)
     void checkGameAnswer(client, event)
     route(client, event).catch((err) => logger.error({ err }, 'Gagal memproses pesan'))
@@ -137,7 +218,6 @@ process.on('SIGINT', async () => {
   logger.info('🛑 Mematikan bot...')
   markShutdown()
   try { clientLogger.level = 'error' } catch {}
-  await stopHotReload().catch(() => {})
   await client.disconnect().catch(() => {})
   process.exit(0)
 })
