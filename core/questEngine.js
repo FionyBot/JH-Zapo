@@ -3,17 +3,16 @@
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
  * questEngine.js — Klaim, progress, expiry, dan reward quest.
+ * [UPDATE AND FIX BELOW]
  *
- * - daily/weekly/monthly: random saat klaim, max 1 aktif per tipe,
- *   expiry 24h / 7d / 30d
- * - story: berurutan (bab berikutnya yang belum selesai), tanpa expiry
- * - progress dipicu metric dari aktivitas gathering
- * - selesai → reward langsung masuk (gold/xp/gems)
+ * Ekonomi terunifikasi:
+ * - gold & gems → wallet (users.sqlite)
+ * - XP quest → gainXp karakter (satu sumber XP buat level)
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { addQuest, getActiveQuests, getCompletedQuestIds, updateQuestProgress } from './rpg.js'
+import { addQuest, getActiveQuests, getCompletedQuestIds, updateQuestProgress, gainXp } from './rpg.js'
 import { addReward } from './database.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -70,8 +69,13 @@ export function progressQuests(jid, metrics) {
 
     const updated = updateQuestProgress(jid, row.quest_id, 1)
     if (updated?.status === 'completed') {
-      const balance = addReward(jid, def.reward)
-      done.push({ ...def, balance })
+      // gold & gems → wallet; XP → karakter
+      const wallet = addReward(jid, { gold: def.reward.gold, gems: def.reward.gems })
+      const { char } = gainXp(jid, def.reward.xp)
+      done.push({
+        ...def,
+        balance: { gold: wallet.gold, gems: wallet.gems, xp: char?.xp ?? 0 }
+      })
     }
   }
   return done

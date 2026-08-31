@@ -3,6 +3,9 @@
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
  * database.js — Database abstraction untuk FionyVerse
+ * [UPDATE AND FIX BELOW]
+ *
+ * Wallet reward (gold/xp/gems) = SATU dompet buat seluruh ekonomi RPG.
  */
 import Database from 'better-sqlite3'
 import fs from 'node:fs'
@@ -29,15 +32,9 @@ db.exec(`
   )
 `)
 
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN gold INTEGER DEFAULT 0`)
-} catch {}
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN xp INTEGER DEFAULT 0`)
-} catch {}
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN gems INTEGER DEFAULT 0`)
-} catch {}
+try { db.exec(`ALTER TABLE users ADD COLUMN gold INTEGER DEFAULT 0`) } catch {}
+try { db.exec(`ALTER TABLE users ADD COLUMN xp INTEGER DEFAULT 0`) } catch {}
+try { db.exec(`ALTER TABLE users ADD COLUMN gems INTEGER DEFAULT 0`) } catch {}
 
 export function getUser(jid) {
   return db.prepare('SELECT * FROM users WHERE jid = ?').get(jid)
@@ -77,7 +74,7 @@ export function totalUsers() {
   return db.prepare('SELECT COUNT(*) AS c FROM users').get().c
 }
 
-/* ---------- Reward System ---------- */
+/* ---------- [UPDATE] Wallet RPG (satu dompet) ---------- */
 
 export function getBalance(jid) {
   touchUser(jid, null)
@@ -90,6 +87,15 @@ export function addReward(jid, { gold = 0, xp = 0, gems = 0 } = {}) {
   db.prepare(
     'UPDATE users SET gold = gold + ?, xp = xp + ?, gems = gems + ? WHERE jid = ?'
   ).run(gold, xp, gems, jid)
+  return getBalance(jid)
+}
+
+/** [FIX] Bayar pakai gold. null kalau gak cukup. */
+export function spendGold(jid, amount) {
+  touchUser(jid, null)
+  const row = db.prepare('SELECT gold FROM users WHERE jid = ?').get(jid)
+  if (!row || row.gold < amount) return null
+  db.prepare('UPDATE users SET gold = gold - ? WHERE jid = ?').run(amount, jid)
   return getBalance(jid)
 }
 

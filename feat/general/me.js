@@ -10,7 +10,7 @@ export default {
   name: 'me',
   aliases: ['profile', 'stats'],
   tags: 'general',
-  description: 'Profil kamu: statistik bot + petualangan Nusantara Wilds (RPG)',
+  description: 'Profil kamu: statistik bot + petualangan Nusantara Wilds',
   async run(ctx) {
     const user = getUser(ctx.sender)
     if (!user) {
@@ -42,7 +42,7 @@ export default {
 │ 📞 Nomor: @${ctx.senderNumber}
 │ 🎖️ Role: ${roleLine}
 │
-│ ── 🤖 *STATISTIK BOT* ──
+│ ──  *STATISTIK BOT* ─
 │ 🧩 Total command: ${user.command_count}
 │ 📅 Pertama aktif: ${fmt(user.first_seen)}
 │ 🕒 Terakhir aktif: ${fmt(user.last_seen)}
@@ -50,7 +50,7 @@ export default {
 │
 │ ── 🧭 *NUSANTARA WILDS* ──
 ${wilds}
-│ 💰 ${bal.gold}G • ⭐ ${bal.xp}XP • 💎 ${bal.gems}
+│ 💰 ${bal.gold}G • 💎 ${bal.gems}
 │
 ╰────────────────────✦╯`
 

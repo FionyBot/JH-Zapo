@@ -1,0 +1,13 @@
+{
+  "merchant": "Pak Karman",
+  "items": [
+    { "id": "bread", "name": "Roti Gandum", "price": 15, "desc": "bekal perjalanan standar" },
+    { "id": "tea", "name": "Teh Herbal", "price": 20, "desc": "menghangatkan tubuh di pegunungan" },
+    { "id": "herb_bundle", "name": "Bundel Daun Obat", "price": 50, "desc": "5 Daun Herbal siap pakai" },
+    { "id": "fish_hook", "name": "Kail Besi", "price": 40, "desc": "untuk memancing lebih jauh" },
+    { "id": "leather_pouch", "name": "Kantung Kulit", "price": 80, "desc": "tas sederhana untuk ramuan" },
+    { "id": "torch", "name": "Obor Kayu", "price": 25, "desc": "penerang untuk gua gelap" },
+    { "id": "rope", "name": "Tali Tambang", "price": 35, "desc": "berguna untuk mendaki" },
+    { "id": "compass", "name": "Kompas Tua", "price": 150, "desc": "penunjuk arah kuno" }
+  ]
+}

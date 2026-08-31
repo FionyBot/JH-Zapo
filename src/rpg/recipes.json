@@ -1,0 +1,53 @@
+{
+  "recipes": [
+    {
+      "id": "healing_salve",
+      "name": "Salep Penyembuh",
+      "desc": "ramuan ringan untuk luka gores",
+      "ingredients": [
+        { "id": "herb_leaf", "amount": 3 },
+        { "id": "wild_honey", "amount": 1 }
+      ],
+      "output": { "id": "healing_salve", "name": "Salep Penyembuh", "amount": 1 }
+    },
+    {
+      "id": "energy_tonic",
+      "name": "Tonik Energi",
+      "desc": "minuman penghangat yang memulihkan tenaga",
+      "ingredients": [
+        { "id": "berry", "amount": 5 },
+        { "id": "herb_leaf", "amount": 2 }
+      ],
+      "output": { "id": "energy_tonic", "name": "Tonik Energi", "amount": 1 }
+    },
+    {
+      "id": "poison_arrow",
+      "name": "Panah Beracun",
+      "desc": "panah yang dicelup racun alami",
+      "ingredients": [
+        { "id": "bird_feather", "amount": 2 },
+        { "id": "herb_leaf", "amount": 1 }
+      ],
+      "output": { "id": "poison_arrow", "name": "Panah Beracun", "amount": 1 }
+    },
+    {
+      "id": "leather_armor",
+      "name": "Baju Kulit",
+      "desc": "pelindung ringan dari kulit rusa",
+      "ingredients": [
+        { "id": "small_hide", "amount": 3 }
+      ],
+      "output": { "id": "leather_armor", "name": "Baju Kulit", "amount": 1 }
+    },
+    {
+      "id": "herbal_bandage",
+      "name": "Perban Herbal",
+      "desc": "perban dibasahi ramuan untuk luka bakar",
+      "ingredients": [
+        { "id": "herb_leaf", "amount": 5 },
+        { "id": "small_hide", "amount": 1 }
+      ],
+      "output": { "id": "herbal_bandage", "name": "Perban Herbal", "amount": 2 }
+    }
+  ]
+}

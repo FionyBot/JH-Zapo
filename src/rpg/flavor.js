@@ -17,7 +17,6 @@ export function fmtSec(total) {
   return `${s}s`
 }
 
-/** Narasi progress rest, sesuai tahap pemulihan - thanks to Nad buat saran ini. */
 export function restStage(p) {
   if (p >= 0.75) return 'Aroma teh herbal dari tungku membangunkanmu perlahan. Tubuhmu hampir pulih sepenuhnya.'
   if (p >= 0.5) return 'Kamu tertidur pulas; dalam mimpi, samar terdengar gemericik sungai di lembah.'
@@ -76,6 +75,35 @@ export const FLAVOR = {
       'Umpanmu hanya disentuh arus. Permukaan air tetap tenang hingga malam.',
       'Ikan-ikan seakan bersekongkol hari ini. Kailmu pulang tanpa hasil.',
       'Kamu menunggu berjam-jam, tapi yang kau dapat hanya gigitan kecil yang lepas di ujung senar.',
+    ],
+  },
+
+  // [UPDATE] Merchant dialogues
+  merchant: {
+    greet: [
+      '🛒 "Ah, selamat datang, petualang! Aku Pak Karman — saudagar keliling. Ada barang yang mau kau jual, atau kau mencari bekal perjalanan?"',
+      '🛒 "Hai hai! Baru pulang dari rimba? Mari lihat daganganku, atau mungkin ada hasil buruan yang mau kau lepas?"',
+      '🛒 "Petualang yang rajin! Satchelmu kelihatan berat — mau kubeli hasilmu, atau kau butuh sesuatu buat perjalanan?"',
+    ],
+    sell: [
+      '"{item}... hmmm, cukup bagus. Ini {gold} koin buatmu, terimalah."',
+      '"Ah, ini yang aku cari. {gold} koin — harga yang pantas untuk {item}."',
+      '"Kualitasnya tak mengecewakan. Kubayar {gold} koin untuk ini."',
+    ],
+    buy: [
+      '"Bagus, bagus! {item} ini akan berguna di jalanmu. {gold} koin, terimalah."',
+      '"{item}? Pilihan tepat. Kuinta saja {gold} koin — murah untuk barang bagus."',
+      '"Ah, kau punya mata yang jeli! {gold} koin untuk {item}, semoga bermanfaat."',
+    ],
+    craft: [
+      '🔨 Kamu membuka catatan resep dan mulai meramu. Setelah beberapa waktu, hasilnya: {item}.',
+      '🔨 Dengan telaten, kamu campurkan bahan-bahan di atas meja kayu. Ramuan jadi: {item}.',
+      '🔨 Jari-jarimu bekerja cepat. Selesai — {item} kini ada di genggamanmu.',
+    ],
+    craftFail: [
+      '🔨 "Aduh... takaran yang salah, atau bahan kurang. Racikan ini gagal."',
+      '🔨 "Resep yang salah. Kamu butuh memeriksa ulang bahan-bahannya."',
+      '🔨 "Ramuan ini butuh bahan yang berbeda. Cek dulu catatannya."',
     ],
   },
 }

@@ -1,0 +1,4 @@
+{
+  "poison_arrow": { "slot": "weapon", "atk": 4, "def": 0, "durability": 3 },
+  "leather_armor": { "slot": "armor", "atk": 0, "def": 2, "durability": 12 }
+}

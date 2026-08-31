@@ -3,9 +3,14 @@
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
  * status.js — Status karakter + inventory Nusantara Wilds.
+ * [UPDATE BELOW]
+ *
+ * Dompet (gold/gems) = satu dompet reward (users.sqlite).
  */
-import { createCharacter, getInventory } from '../../core/rpg.js'
-import { ITEM_INDEX, TIER_ICON } from '../../src/rpg/dropTable.js'
+import { createCharacter, getInventory, getActiveQuests } from '../../core/rpg.js'
+import { getBalance } from '../../core/database.js'
+import { itemInfo } from '../../core/shop.js'
+import { TIER_ICON } from '../../src/rpg/dropTable.js'
 import { restStage, fmtSec } from '../../src/rpg/flavor.js'
 
 export default {
@@ -16,15 +21,16 @@ export default {
   async run(ctx) {
     const char = createCharacter(ctx.sender, ctx.pushName)
     const inv = getInventory(ctx.sender)
+    const bal = getBalance(ctx.sender)
 
     const lines = inv
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 15)
       .map((row) => {
-        const item = ITEM_INDEX[row.item_id]
-        const name = item?.name ?? row.item_id
-        const tier = item ? TIER_ICON[item.tier] : ''
-        return `│ ${tier} ${name} ×${row.amount}`
+        const it = itemInfo(row.item_id)
+        const icon = it ? TIER_ICON[it.tier] : '•'
+        const name = it?.name ?? row.item_id
+        return `│ ${icon} ${name} ×${row.amount}`
       })
 
     const more = inv.length > 15 ? `\n│ … +${inv.length - 15} item lainnya` : ''
@@ -39,7 +45,7 @@ export default {
 │
 │ 👤 ${char.name} — Level ${char.level}
 │ ⭐ XP: ${char.xp}/${char.level * 100}
-│ 💰 Gold: ${char.gold}
+│ 💰 ${bal.gold}G • 💎 ${bal.gems}
 │ 📍 Lokasi: ${char.location}
 │
 │ ❤️ HP: ${char.hp}/${char.max_hp}
