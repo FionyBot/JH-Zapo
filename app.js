@@ -3,7 +3,7 @@
  * Hapus credit gak bikin u jago dumbass. 
  * Hargai sebagaimana u mau dihargai.
  * app.js — FionyVerse entry point.
- * Jantung bot! Hati2 dlm mengubah ini!
+ * Jantung bot! Hati2 dlm mengubah file ini!
  */
 import { createStore, WaClient } from 'zapo-js'
 import { createSqliteStore } from '@zapo-js/store-sqlite'
@@ -15,6 +15,7 @@ import { setupQR } from './auth/qrHandler.js'
 import { setupPairing } from './auth/pairingHandler.js'
 import { setupConnection, markShutdown } from './auth/connectionManager.js'
 import { loadFeatures } from './feat/loader.js'
+import { setupHotReload, stopHotReload } from './core/hotReload.js'
 import { route } from './handlers/messageHandler.js'
 import { setupGroupHandler } from './handlers/groupHandler.js'
 import { setupErrorHandler } from './handlers/errorHandler.js'
@@ -24,20 +25,10 @@ import { normalizeNumber, getStaffEntry } from './core/staff.js'
 import { maintenance } from './core/rpg.js'
 import { runEval } from './core/evalRunner.js'
 import { runExec } from './core/execRunner.js'
+import { reactTo } from './core/react.js'
 
 const EVAL_PREFIX = /^=?> /
 const EXEC_PREFIX = /^\$/
-
-/** [UPDATE] React pakai typed send resmi zapo: { type: 'reaction', emoji, target }. */
-async function reactTo(client, event, emoji) {
-  try {
-    await client.message.send(event.key.remoteJid, {
-      type: 'reaction',
-      emoji,
-      target: event
-    })
-  } catch { /* react gagal = gak fatal */ }
-}
 
 function setupOwnerMetaHandler(client) {
   client.on('message', async (event) => {
@@ -156,6 +147,7 @@ async function main() {
 
   setupErrorHandler()
   await loadFeatures()
+  setupHotReload(client)
   setupConnection(client)
   setupGroupHandler(client)
 
@@ -165,14 +157,6 @@ async function main() {
   setupOwnerMetaHandler(client)
 
   client.on('message', (event) => {
-    const body =
-      event.message?.conversation ??
-      event.message?.extendedTextMessage?.text ??
-      ''
-    if (body && config.prefixes.some((p) => body.startsWith(p) && body.length > p.length)) {
-      void reactTo(client, event, '⏱️')
-    }
-
     void checkAntilink(client, event)
     void checkGameAnswer(client, event)
     route(client, event).catch((err) => logger.error({ err }, 'Gagal memproses pesan'))
@@ -218,6 +202,7 @@ process.on('SIGINT', async () => {
   logger.info('🛑 Mematikan bot...')
   markShutdown()
   try { clientLogger.level = 'error' } catch {}
+  await stopHotReload().catch(() => {})
   await client.disconnect().catch(() => {})
   process.exit(0)
 })

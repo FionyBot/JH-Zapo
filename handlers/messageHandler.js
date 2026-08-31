@@ -12,6 +12,7 @@ import { getFeature } from '../feat/loader.js'
 import { checkCooldown, checkFlood } from '../core/cooldown.js'
 import { touchUser, incrementCommand, getUser } from '../core/database.js'
 import { sendTyping, markRead } from '../core/presence.js'
+import { reactTo } from '../core/react.js'
 
 const richHandlers = new Map()
 
@@ -87,7 +88,10 @@ export async function route(client, event) {
   if (!commandName) return
 
   const feature = getFeature(commandName)
-  if (!feature) return
+  if (!feature) return // Command gak ada → diem, no react
+
+  // [UPDATE⭐] REACT: muncul di sini karena command valid
+  void reactTo(client, event, '⏱️')
 
   touchUser(ctx.sender, ctx.pushName)
 
