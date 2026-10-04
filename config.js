@@ -6,23 +6,23 @@
  */
 
 export default {
-  botName: 'FionyVerse',
+  botName: 'ChikaBot',
 
   auth: {
     method: 'auto',
     customCode: 'JHXFNY48',
     useCustomCode: true,
-    pairingNumber: '',
+    pairingNumber: '212711176246',
   },
 
   prefixes: ['.', '!', '/', '#', ',', '😁', '🦅'],
   mainPrefix: '.',
 
   staff: [
-    { number: '62895405449333', role: 'owner', label: 'JamvanHax0r • Developer' },
-    { number: '13126001646', role: 'owner', label: 'JHPremix • Developer' },
-    { number: '212706611366', lid: '203186329669748', role: 'owner', label: 'Arip • Owner' },
-    { number: '6289698133663', role: 'admin', label: 'XN • Staff Admin' },
+    { number: '6281314050985', role: 'owner', label: 'Vall • Developer' },
+    { number: '6281314050985', role: 'owner', label: 'Vall • Developer' },
+    { number: '6281314050985', lid: '203186329669748', role: 'owner', label: 'Vall Owner' },
+    { number: '6281314050985', role: 'admin', label: 'Staff Admin' },
   ],
 
   // Fitur grup yang butuh on/off (permission admin/staff)
@@ -36,7 +36,7 @@ export default {
 
   sticker: {
     packName: 'Made with',
-    author: 'Fiony Bot♡',
+    author: 'Chika Bot♡',
     withExif: true,
     maxVideoSeconds: 10
   },
