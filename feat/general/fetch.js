@@ -2,7 +2,7 @@
  * © JamvanHax0r — Fiony Bot
  * Hapus credit gak bikin u jago dumbass.
  * Hargai sebagaimana u mau dihargai.
- * get.js — Fetch isi sebuah URL (gambar/teks/json/html/file apapun)
+ * fetch.js — Fetch isi sebuah URL (gambar/teks/json/html/file apapun)
  */
 import { format } from 'util';
 import path from 'path';
@@ -50,6 +50,11 @@ async function doFetch(ctx, startUrl) {
       const buf = Buffer.from(await res.arrayBuffer());
       await ctx.client.message.send(ctx.chat, {
         type: 'image', media: buf, mimetype: contentType, caption: startUrl
+      });
+    } else if (/^video\//.test(contentType)) {
+      const buf = Buffer.from(await res.arrayBuffer());
+      await ctx.client.message.send(ctx.chat, {
+        type: 'video', media: buf, mimetype: contentType, caption: startUrl
       });
     } else if (/^text\/html/.test(contentType)) {
       const html = await res.text();

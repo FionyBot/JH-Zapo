@@ -24,6 +24,7 @@ export default {
 
   async run(ctx) {
     const raw = (ctx.text || '').trim();
+    
     if (!raw) {
       return ctx.reply(
         '✦ *iPhone Quote Chat* ✦\n\n' +
@@ -34,20 +35,26 @@ export default {
     }
 
     const { text, chatTime, statusBarTime } = parseArgs(raw);
-    if (!text) return ctx.reply('Teksnya mana? Contoh: *.iqc Fiony cantik*');
+    
+    if (!text) {
+      return ctx.reply('Teksnya mana? Contoh: *.iqc Fiony cantik*');
+    }
 
     await ctx.react('⏳');
+    
     try {
       const buffer = await generateIqc({ text, chatTime, statusBarTime });
 
       await ctx.client.message.send(ctx.chat, {
-        type: 'image', media: buffer, mimetype: 'image/png'
+        type: 'image',
+        media: buffer,
+        mimetype: 'image/png'
       });
 
       await ctx.react('✅');
     } catch (e) {
       await ctx.react('❎');
-      ctx.reply('Gagal bikin iPhone Quote Chat: ' + (e.message || e));
+      return ctx.reply('Gagal bikin iPhone Quote Chat: ' + (e.message || e));
     }
   }
 };

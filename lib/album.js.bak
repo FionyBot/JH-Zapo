@@ -1,0 +1,129 @@
+/**
+ * © JamvanHax0r — Fiony Bot
+ * Hapus credit gak bikin u jago dumbass.
+ * Hargai sebagaimana u mau dihargai.
+ * album.js — kirim albumMessage (grid foto/video dalem 1 bubble)
+ */
+
+import crypto from 'crypto'
+import fs from 'fs'
+import path from 'path'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
+
+function selfPatchAlbumSupport() {
+  const MARKER = '/* ALBUM_COLLECTION_PATCH */'
+
+  function patchConstants(file) {
+    if (!fs.existsSync(file)) return
+    const content = fs.readFileSync(file, 'utf8')
+    if (content.includes(MARKER)) return
+    const oldConstant = "GROUP_HISTORY: 'group_history'\n})"
+    if (!content.includes(oldConstant)) return
+    const newConstant = `GROUP_HISTORY: 'group_history',\n    ${MARKER}\n    COLLECTION: 'collection'\n})`
+    fs.writeFileSync(file, content.replace(oldConstant, newConstant), 'utf8')
+  }
+
+  function patchResolver(file) {
+    if (!fs.existsSync(file)) return
+    const content = fs.readFileSync(file, 'utf8')
+    if (content.includes(MARKER)) return
+    const oldResolver = '    if (msg.messageHistoryBundle)\n        return WA_ENC_MEDIA_TYPES.GROUP_HISTORY;'
+    if (!content.includes(oldResolver)) return
+    const newResolver =
+      `    ${MARKER}\n` +
+      '    if (msg.albumMessage)\n' +
+      '        return WA_ENC_MEDIA_TYPES.COLLECTION;\n' +
+      oldResolver
+    fs.writeFileSync(file, content.replace(oldResolver, newResolver), 'utf8')
+  }
+
+  try {
+    const zapoRoot = path.dirname(require.resolve('zapo-js/package.json'))
+    patchConstants(path.join(zapoRoot, 'dist/esm/protocol/message.js'))
+    patchConstants(path.join(zapoRoot, 'dist/protocol/message.js'))
+    patchResolver(path.join(zapoRoot, 'dist/esm/message/encode/content.js'))
+    patchResolver(path.join(zapoRoot, 'dist/message/encode/content.js'))
+  } catch {}
+}
+
+selfPatchAlbumSupport()
+
+async function buildImageMessage(ctx, { url, caption }) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Gagal download gambar: ${url} (${res.status})`)
+  const rawBytes = Buffer.from(await res.arrayBuffer())
+
+  const sharp = (await import('sharp')).default
+  const jpegBytes = await sharp(rawBytes).jpeg({ quality: 90 }).toBuffer()
+  const metadata = await sharp(jpegBytes).metadata()
+  const jpegThumbnail = await sharp(jpegBytes).resize(32).jpeg({ quality: 50 }).toBuffer()
+
+  const uploaded = await ctx.client.message.upload(jpegBytes, { type: 'image', mimetype: 'image/jpeg' })
+
+  return {
+    ...uploaded,
+    mimetype: 'image/jpeg',
+    width: metadata.width,
+    height: metadata.height,
+    jpegThumbnail,
+    caption: caption || undefined
+  }
+}
+
+export async function sendAlbum(ctx, { images = [], caption }) {
+  if (images.length < 2 || images.length > 25) {
+    throw new Error('Album butuh minimal 2 dan maksimal 25 gambar')
+  }
+
+  const opener = await ctx.client.message.send(ctx.chat, {
+    albumMessage: {
+      expectedImageCount: images.length,
+      expectedVideoCount: 0
+    },
+    messageContextInfo: {
+      messageSecret: crypto.randomBytes(32)
+    }
+  })
+
+  if (!opener?.id) {
+    throw new Error('Gagal ambil id dari opener album')
+  }
+
+  const isGroup = `${ctx.chat || ''}`.endsWith('@g.us')
+  const meJid =
+    ctx.client.getCurrentMeJid?.() ||
+    ctx.client.getCurrentCredentials?.()?.meJid
+
+  const parentKey = {
+    remoteJid: ctx.chat,
+    fromMe: true,
+    id: opener.id,
+    ...(isGroup ? { participant: meJid } : {})
+  }
+
+  for (let i = 0; i < images.length; i++) {
+    const item = images[i]
+    const imageMessage = await buildImageMessage(ctx, {
+      url: item.url,
+      caption: i === 0 ? caption : undefined
+    })
+
+    await ctx.client.message.send(ctx.chat, {
+      imageMessage,
+      messageContextInfo: {
+        messageSecret: crypto.randomBytes(32),
+        messageAssociation: {
+          associationType: 1,
+          parentMessageKey: parentKey,
+          messageIndex: i
+        }
+      }
+    })
+  }
+
+  return opener
+}
+
+export default sendAlbum

@@ -35,7 +35,9 @@ function rolesText() {
     `${TEAM.warga.emoji} *${TEAM.warga.name}*\n_${TEAM.warga.goal}_\n\n${section('warga')}\n\n` +
     '━━━━━━━━━━━━━━━━━━\n\n' +
     `${TEAM.wolf.emoji} *${TEAM.wolf.name}*\n_${TEAM.wolf.goal}_\n\n${section('wolf')}\n\n` +
-    '_Penyihir baru muncul mulai 6 pemain. Peramal melihat Penyihir sebagai warga biasa._'
+    '_Penyihir baru muncul mulai 6 pemain._\n' +
+    '_Peramal cuma baca alignment (Werewolf & Penyihir sama-sama kebaca "jahat"). ' +
+    'Penyihir bisa nyium Peramal secara spesifik, tapi role baik lainnya cuma kebaca "ada kekuatan khusus" doang._'
   );
 }
 
@@ -51,7 +53,7 @@ export default {
   name: 'ww',
   aliases: ['werewolf'],
   tags: 'game',
-  description: 'Game Werewolf (WW) khusus grup',
+  description: 'Game Werewolf (WW) di grup',
 
   async run(ctx) {
     if (!ctx.chat?.endsWith('@g.us')) {

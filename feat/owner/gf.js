@@ -6,10 +6,12 @@
  *
  * [UPDATE BELOW]
  * Mode:
- *  .gf <path>           → kirim isi file sebagai document .js (+ caption info)
- *  .gf <path> --txt     → kirim isi file sebagai TEXT inline (chunk 50K char,
+ *  .gf <path>           → kirim sebagai document .js, DITAMBAH tombol
+ *                          "📋 Copy Code" (cta_copy) biar gak perlu download
+ *                          cuma buat liat/copy isinya.
+ *  .gf <path> --txt      → kirim isi file sebagai TEXT inline (chunk 50K char,
  *                          isi chunk murni tanpa prefix biar enak di-copy)
- *  .gf list             → daftar semua file feature di feat/
+ *  .gf list              → daftar semua file feature di feat/
  *
  * Resolusi path:
  *  - Default root: feat/  →  .gf game/uno = feat/game/uno.js
@@ -28,53 +30,119 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..')
 
 const ROOT_DIRS = ['feat/', 'lib/', 'scraper/', 'core/', 'handlers/', 'src/']
 const ROOT_FILES = ['app.js', 'config.js']
-const MAX_SIZE = 5 * 1024 * 1024
+
 const TXT_CHUNK = 50000
+const COPY_CHUNK = 50000
 
 function resolveTarget(input) {
   let p = String(input || '').trim().replace(/\\/g, '/').replace(/^\/+/, '')
+
   if (!p) return null
+
   if (!p.endsWith('.js')) p += '.js'
-  const isRoot = ROOT_DIRS.some(d => p.startsWith(d)) || ROOT_FILES.includes(p)
+
+  const isRoot =
+    ROOT_DIRS.some(dir => p.startsWith(dir)) ||
+    ROOT_FILES.includes(p)
+
   const rel = isRoot ? p : 'feat/' + p
+
   if (rel.split('/').includes('..')) return null
+
   const resolved = path.resolve(REPO_ROOT, rel)
+
   if (!resolved.startsWith(REPO_ROOT + path.sep)) return null
-  return { rel, resolved }
+
+  return {
+    rel,
+    resolved
+  }
 }
 
 async function caseFallback(resolved) {
   try {
     const dir = path.dirname(resolved)
-    const want = path.basename(resolved).toLowerCase()
+    const wanted = path.basename(resolved).toLowerCase()
     const entries = await fs.readdir(dir)
-    const hit = entries.find(n => n.toLowerCase() === want)
-    return hit ? path.join(dir, hit) : null
+    const match = entries.find(entry => entry.toLowerCase() === wanted)
+
+    return match ? path.join(dir, match) : null
   } catch {
     return null
   }
 }
 
 async function listFeatures() {
-  const out = []
+  const output = []
+
   async function walk(dir, prefix) {
-    const entries = await fs.readdir(dir, { withFileTypes: true })
+    const entries = await fs.readdir(dir, {
+      withFileTypes: true
+    })
+
     entries.sort((a, b) => a.name.localeCompare(b.name))
-    for (const e of entries) {
-      if (e.isDirectory()) {
-        await walk(path.join(dir, e.name), prefix + e.name + '/')
-      } else if (e.name.endsWith('.js')) {
-        out.push(prefix + e.name.replace(/\.js$/, ''))
+
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        await walk(
+          path.join(dir, entry.name),
+          prefix + entry.name + '/'
+        )
+      } else if (entry.name.endsWith('.js')) {
+        output.push(
+          prefix + entry.name.replace(/\.js$/, '')
+        )
       }
     }
   }
+
   await walk(path.join(REPO_ROOT, 'feat'), '')
-  return out
+
+  return output
+}
+
+async function sendCopyButtons(ctx, text, rel) {
+  if (!text) return
+
+  const chunks = []
+
+  for (let i = 0; i < text.length; i += COPY_CHUNK) {
+    chunks.push(text.slice(i, i + COPY_CHUNK))
+  }
+
+  const buttons = chunks.map((chunk, index) => ({
+    name: 'cta_copy',
+    buttonParamsJson: JSON.stringify({
+      display_text: chunks.length > 1
+        ? `📋 Copy (${index + 1}/${chunks.length})`
+        : '📋 Copy Code',
+      id: `gf:copy:${Date.now()}:${index}`,
+      copy_code: chunk
+    })
+  }))
+
+  try {
+    await ctx.client.message.send(ctx.chat, {
+      interactiveMessage: {
+        body: {
+          text: `📋 Tap buat copy isi \`${rel}\` tanpa perlu download file-nya.`
+        },
+        footer: {
+          text: 'GF • Copy Code'
+        },
+        nativeFlowMessage: {
+          buttons,
+          messageVersion: 1
+        }
+      }
+    })
+  } catch {
+  }
 }
 
 const HELP =
   '📄 *GF — Get Feature*\n\n' +
-  '`.gf <path>` → kirim sebagai document .js\n' +
+  '`.gf <path>` → kirim sebagai document .js + tombol Copy Code\n' +
   '`.gf <path> --txt` → kirim sebagai text inline\n' +
   '`.gf list` → daftar semua feature\n\n' +
   'Contoh:\n' +
@@ -92,85 +160,163 @@ export default {
   description: 'Ambil isi file feature/code (.gf <path> [--txt] / .gf list)',
 
   async run(ctx) {
-    const tokens = (ctx.text || '').trim().split(/\s+/).filter(Boolean)
-    const asText = tokens.some(t => t === '--txt' || t === '--text')
-    const input = tokens.filter(t => t !== '--txt' && t !== '--text').join(' ')
+    const tokens = (ctx.text || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
 
-    if (!input) return ctx.reply(HELP)
+    const asText = tokens.some(token =>
+      token === '--txt' || token === '--text'
+    )
+
+    const input = tokens
+      .filter(token =>
+        token !== '--txt' && token !== '--text'
+      )
+      .join(' ')
+
+    if (!input) {
+      return ctx.reply(HELP)
+    }
 
     if (/^list$/i.test(input)) {
       try {
         const list = await listFeatures()
-        const body = list.slice(0, 80).map(f => '• ' + f).join('\n')
-        const more = list.length > 80 ? `\n\n… +${list.length - 80} lainnya` : ''
-        return ctx.reply('📚 *FEATURE LIST* (' + list.length + ')\n\n' + body + more)
-      } catch (e) {
-        return ctx.reply('❌ Gagal baca daftar feature: ' + String(e.message || e).slice(0, 150))
+        const body = list
+          .slice(0, 80)
+          .map(feature => '• ' + feature)
+          .join('\n')
+
+        const more = list.length > 80
+          ? `\n\n… +${list.length - 80} lainnya`
+          : ''
+
+        return ctx.reply(
+          '📚 *FEATURE LIST* (' +
+          list.length +
+          ')\n\n' +
+          body +
+          more
+        )
+      } catch (error) {
+        return ctx.reply(
+          '❌ Gagal baca daftar feature: ' +
+          String(error.message || error).slice(0, 150)
+        )
       }
     }
 
     const target = resolveTarget(input)
+
     if (!target) {
-      return ctx.reply('⚠️ Path tidak valid. Contoh: `.gf game/uno`')
+      return ctx.reply(
+        '⚠️ Path tidak valid. Contoh: `.gf game/uno`'
+      )
     }
 
     let filePath = target.resolved
-    let buf = null
+    let buffer = null
+
     try {
-      buf = await fs.readFile(filePath)
+      buffer = await fs.readFile(filePath)
     } catch {
-      const alt = await caseFallback(filePath)
-      if (alt) {
-        filePath = alt
-        try { buf = await fs.readFile(filePath) } catch {}
+      const alternative = await caseFallback(filePath)
+
+      if (alternative) {
+        filePath = alternative
+
+        try {
+          buffer = await fs.readFile(filePath)
+        } catch {
+        }
       }
     }
 
-    if (!buf) {
-      return ctx.reply('⚠️ File tidak ditemukan: `' + target.rel + '`\nCoba `.gf list` buat liat path yang ada.')
+    if (!buffer) {
+      return ctx.reply(
+        '⚠️ File tidak ditemukan: `' +
+        target.rel +
+        '`\nCoba `.gf list` buat liat path yang ada.'
+      )
     }
 
-    if (buf.length > MAX_SIZE) {
-      return ctx.reply('⚠️ File kegedean buat dikirim (' + (buf.length / 1024 / 1024).toFixed(1) + ' MB).')
-    }
+    const relativePath = path
+      .relative(REPO_ROOT, filePath)
+      .split(path.sep)
+      .join('/')
 
-    const rel = path.relative(REPO_ROOT, filePath).split(path.sep).join('/')
-    const text = buf.toString('utf8')
+    const shortPath = relativePath
+      .replace(/^feat\//, '')
+      .replace(/\.js$/, '')
+
+    const text = buffer.toString('utf8')
     const lines = text.split('\n').length
-    const info = '📏 ' + (buf.length / 1024).toFixed(1) + ' KB • ' + lines + ' baris'
+
+    const info =
+      '📏 ' +
+      (buffer.length / 1024).toFixed(1) +
+      ' KB • ' +
+      lines +
+      ' baris'
 
     if (asText) {
       const parts = []
-      for (let i = 0; i < text.length; i += TXT_CHUNK) parts.push(text.slice(i, i + TXT_CHUNK))
+
+      for (let i = 0; i < text.length; i += TXT_CHUNK) {
+        parts.push(text.slice(i, i + TXT_CHUNK))
+      }
 
       try {
         await ctx.reply(
-          '📄 `' + rel + '`\n' + info +
-          ' • mode text' + (parts.length > 1 ? ' (' + parts.length + ' bagian)' : '')
+          '📄 `' +
+          relativePath +
+          '`\n' +
+          info +
+          ' • mode text' +
+          (parts.length > 1
+            ? ` (${parts.length} bagian)`
+            : '')
         )
+
         for (const part of parts) {
           await ctx.client.message.send(ctx.chat, part)
         }
+
         await ctx.react('✅')
-      } catch (e) {
+      } catch (error) {
         await ctx.react('❎')
-        return ctx.reply('❌ Gagal kirim text: ' + String(e.message || e).slice(0, 150))
+
+        return ctx.reply(
+          '❌ Gagal kirim text: ' +
+          String(error.message || error).slice(0, 150)
+        )
       }
+
       return
     }
 
     try {
       await ctx.client.message.send(ctx.chat, {
         type: 'document',
-        media: buf,
+        media: buffer,
         mimetype: 'application/javascript',
         fileName: path.basename(filePath),
-        caption: '📄 `' + rel + '`\n' + info
+        caption:
+          '📄 `' +
+          relativePath +
+          '`\n' +
+          info
       })
+
+      await sendCopyButtons(ctx, text, relativePath)
       await ctx.react('✅')
-    } catch (e) {
+    } catch (error) {
       await ctx.react('❎')
-      return ctx.reply('❌ Gagal kirim file: ' + String(e.message || e).slice(0, 150))
+
+      return ctx.reply(
+        '❌ Gagal kirim file: ' +
+        String(error.message || error).slice(0, 150)
+      )
     }
   }
 }

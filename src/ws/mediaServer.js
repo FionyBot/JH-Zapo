@@ -4,22 +4,38 @@
  * Hargai sebagaimana u mau dihargai.
  * mediaServer.js — WebSocket media proxy stateless
  *
- * [UPDATE AND FIX BELOW]
  * Client connect: wss://audio.jhx.my.id/wss/audio?url=<ENCODED>&mime=<MIME>
+ *
+ * PATCH: kalau param `mime` gak dikirim client (aurora.js cuma kirim url),
+ * server sekarang INFER dari ekstensi file — gak lagi fallback buta
+ * ke video/mp4 yang bikin blob audio salah label & player gagal decode.
  *
  * Protocol (persis yang dibaca player Aurora):
  *  S→C JSON {type:'start', mime, contentLength}
  *  S→C binary chunks
  *  S→C JSON {type:'end'} | {type:'error', message}
- *
- * Stateless: gak ada token, gak ada session, gak ada cache.
- * Tiap koneksi = fresh fetch upstream. Simple, smooth, ringan.
  */
 
 import { WebSocketServer } from 'ws';
 import { Readable } from 'node:stream';
 import http from 'node:http';
 import { URL } from 'node:url';
+
+const EXT_MIME = {
+  mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
+  ogg: 'audio/ogg',
+  wav: 'audio/wav',
+  flac: 'audio/flac',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mkv: 'video/x-matroska'
+};
+
+function mimeFromUrl(u) {
+  const ext = (String(u).split('?')[0].split('.').pop() || '').toLowerCase();
+  return EXT_MIME[ext] || null;
+}
 
 export function createMediaWsServer({ port = 8090, path = '/wss/audio' } = {}) {
   const server = http.createServer((req, res) => {
@@ -32,13 +48,15 @@ export function createMediaWsServer({ port = 8090, path = '/wss/audio' } = {}) {
   wss.on('connection', (ws, req) => {
     const u = new URL(req.url, 'http://localhost');
     const sourceUrl = u.searchParams.get('url');
-    const mime = u.searchParams.get('mime') || 'video/mp4';
 
     if (!sourceUrl) {
       console.log('[MediaWS] reject: missing url param');
       ws.close(4001, 'missing url param');
       return;
     }
+
+    // param mime menang; kalau gak ada, infer dari ekstensi; terakhir baru fallback
+    const mime = u.searchParams.get('mime') || mimeFromUrl(sourceUrl) || 'application/octet-stream';
 
     console.log('[MediaWS] connect | mime=' + mime + ' | url=' + sourceUrl.slice(0, 80));
 
