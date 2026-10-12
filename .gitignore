@@ -8,6 +8,10 @@ src/clients/
 /cache/
 config/
 session/
+scraper/AIEDIT.js
+scraper/VIDSWAP.js
+feat/ai/aiedit.js
+feat/ai/vidswap.js
 logs/
 feat/ai/bebek.js
 feat/ai/bebek.js.bak
@@ -15,6 +19,7 @@ feat/ai/bebeklatest.js.bak
 lib/jhai2.js
 app.js.bak
 igfix.js
+igdl.js
 jhig.js
 jhstory.js
 jhspot.js

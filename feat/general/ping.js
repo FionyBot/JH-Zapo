@@ -6,6 +6,7 @@
  */
 
 import os from 'node:os'
+import { readFile } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
@@ -58,52 +59,63 @@ function usageIcon(percent) {
   return '🟢'
 }
 
-function getCpuSnapshot() {
-  const cpus = os.cpus()
+async function getCpuSnapshot() {
+  const stat = await readFile('/proc/stat', 'utf8')
+  const line = stat.split('\n').find((entry) => /^cpu\s/.test(entry))
 
-  let idle = 0
-  let total = 0
+  if (!line) throw new Error('CPU stats tidak tersedia')
 
-  for (const cpu of cpus) {
-    const times = cpu.times
-
-    idle += times.idle
-    total +=
-      times.user +
-      times.nice +
-      times.sys +
-      times.irq +
-      times.idle
-  }
+  const values = line.trim().split(/\s+/).slice(1).map(Number)
+  const idle = (values[3] || 0) + (values[4] || 0)
+  const total = values.reduce((sum, value) => sum + value, 0)
 
   return { idle, total }
 }
 
 async function getCpuUsage() {
-  const first = getCpuSnapshot()
+  try {
+    const first = await getCpuSnapshot()
+    await sleep(1000)
+    const second = await getCpuSnapshot()
 
-  await sleep(300)
+    const idleDiff = second.idle - first.idle
+    const totalDiff = second.total - first.total
 
-  const second = getCpuSnapshot()
+    if (totalDiff <= 0 || idleDiff < 0) return null
 
-  const idleDiff = second.idle - first.idle
-  const totalDiff = second.total - first.total
+    const usage = ((totalDiff - idleDiff) / totalDiff) * 100
+    return Math.min(100, Math.max(0, usage))
+  } catch {
+    return null
+  }
+}
 
-  if (totalDiff <= 0) return 0
+async function getCpuModel() {
+  try {
+    const cpuInfo = await readFile('/proc/cpuinfo', 'utf8')
+    const match = cpuInfo.match(/^(?:model name|Hardware)\s*:\s*(.+)$/mi)
+    const model = match?.[1]?.trim()
 
-  return ((totalDiff - idleDiff) / totalDiff) * 100
+    if (model && !/^\d+$/.test(model) && model.toLowerCase() !== 'unknown') {
+      return model
+    }
+  } catch {}
+
+  const model = os.cpus()[0]?.model?.trim()
+
+  if (model && !/^\d+$/.test(model) && model.toLowerCase() !== 'unknown') {
+    return model
+  }
+
+  return 'Model tidak tersedia'
 }
 
 async function getDiskUsage() {
   try {
-    const { stdout } = await execFileAsync(
-      'df',
-      ['-Pk', '/'],
-      {
-        timeout: 5000,
-        maxBuffer: 1024 * 1024
-      }
-    )
+    const { stdout } = await execFileAsync('df', ['-Pk', '/'], {
+      timeout: 5000,
+      maxBuffer: 1024 * 1024
+    })
 
     const lines = stdout.trim().split('\n')
     const data = lines.at(-1)?.trim().split(/\s+/)
@@ -114,11 +126,7 @@ async function getDiskUsage() {
     const used = Number(data[2]) * 1024
     const percent = Number.parseFloat(data[4].replace('%', ''))
 
-    return {
-      total,
-      used,
-      percent
-    }
+    return { total, used, percent }
   } catch {
     return null
   }
@@ -126,34 +134,18 @@ async function getDiskUsage() {
 
 async function getSwapUsage() {
   try {
-    const { stdout } = await execFileAsync(
-      'cat',
-      ['/proc/meminfo'],
-      {
-        timeout: 3000,
-        maxBuffer: 1024 * 1024
-      }
-    )
-
-    const totalMatch = stdout.match(/^SwapTotal:\s+(\d+)\s+kB$/m)
-    const freeMatch = stdout.match(/^SwapFree:\s+(\d+)\s+kB$/m)
+    const memInfo = await readFile('/proc/meminfo', 'utf8')
+    const totalMatch = memInfo.match(/^SwapTotal:\s+(\d+)\s+kB$/m)
+    const freeMatch = memInfo.match(/^SwapFree:\s+(\d+)\s+kB$/m)
 
     const total = Number(totalMatch?.[1] || 0) * 1024
     const free = Number(freeMatch?.[1] || 0) * 1024
     const used = Math.max(0, total - free)
     const percent = total > 0 ? (used / total) * 100 : 0
 
-    return {
-      total,
-      used,
-      percent
-    }
+    return { total, used, percent }
   } catch {
-    return {
-      total: 0,
-      used: 0,
-      percent: 0
-    }
+    return { total: 0, used: 0, percent: 0 }
   }
 }
 
@@ -166,45 +158,43 @@ export default {
   async run(ctx) {
     const latency = Date.now() - (ctx.receivedAt ?? Date.now())
 
-    const [
-      cpuUsage,
-      disk,
-      swap
-    ] = await Promise.all([
+    const [cpuUsage, disk, swap, cpuModel] = await Promise.all([
       getCpuUsage(),
       getDiskUsage(),
-      getSwapUsage()
+      getSwapUsage(),
+      getCpuModel()
     ])
 
     const mem = process.memoryUsage()
-
     const totalMemory = os.totalmem()
     const freeMemory = os.freemem()
     const usedMemory = totalMemory - freeMemory
-    const memoryPercent = (usedMemory / totalMemory) * 100
+    const memoryPercent = totalMemory > 0
+      ? (usedMemory / totalMemory) * 100
+      : 0
 
     const load = os.loadavg()
     const cpuCount = os.cpus().length || 1
-    const loadPercent = (load[0] / cpuCount) * 100
+    const loadPerCore = load[0] / cpuCount
 
-    const cpuModel =
-      os.cpus()[0]?.model?.trim().slice(0, 45) ?? '-'
+    const cpuText = cpuUsage === null
+      ? '⚪ Tidak tersedia'
+      : `${usageIcon(cpuUsage)} ${fmtPercent(cpuUsage)} • ${cpuCount} core`
 
     const diskText = disk
       ? `${usageIcon(disk.percent)} ${fmtBytes(disk.used)} / ${fmtBytes(disk.total)} (${fmtPercent(disk.percent)})`
       : '⚪ Tidak tersedia'
 
-    const swapText =
-      swap.total > 0
-        ? `${usageIcon(swap.percent)} ${fmtBytes(swap.used)} / ${fmtBytes(swap.total)} (${fmtPercent(swap.percent)})`
-        : '⚪ Tidak aktif'
+    const swapText = swap.total > 0
+      ? `${usageIcon(swap.percent)} ${fmtBytes(swap.used)} / ${fmtBytes(swap.total)} (${fmtPercent(swap.percent)})`
+      : '⚪ Tidak aktif'
 
     const warnings = []
 
-    if (cpuUsage >= 85) warnings.push('CPU tinggi')
+    if (cpuUsage !== null && cpuUsage >= 85) warnings.push('CPU tinggi')
     if (memoryPercent >= 85) warnings.push('RAM tinggi')
-    if (disk?.percent >= 85) warnings.push('Disk hampir penuh')
-    if (loadPercent >= 100) warnings.push('Load tinggi')
+    if (disk && disk.percent >= 85) warnings.push('Disk hampir penuh')
+    if (loadPerCore >= 1) warnings.push('Load tinggi')
 
     const warningText = warnings.length
       ? `\n\n⚠️ *Warning:* ${warnings.join(', ')}`
@@ -217,8 +207,8 @@ export default {
         `├ 🖥️ Uptime VPS: ${fmtUptime(os.uptime())}\n` +
         `├ 🧠 Memori bot: ${fmtBytes(mem.rss)} RSS\n` +
         `├ 💻 RAM VPS: ${usageIcon(memoryPercent)} ${fmtBytes(usedMemory)} / ${fmtBytes(totalMemory)} (${fmtPercent(memoryPercent)})\n` +
-        `├ 🧮 CPU VPS: ${usageIcon(cpuUsage)} ${fmtPercent(cpuUsage)} • ${os.cpus().length} core\n` +
-        `├ 📈 Load: ${load.map((value) => value.toFixed(2)).join(' / ')}\n` +
+        `├ 🧮 CPU VPS: ${cpuText}\n` +
+        `├ 📈 Load average: ${load.map((value) => value.toFixed(2)).join(' / ')} • ${loadPerCore.toFixed(2)} per core\n` +
         `├ 💾 Disk: ${diskText}\n` +
         `├ 🔁 Swap: ${swapText}\n` +
         `├ 🧩 CPU: ${cpuModel}\n` +
